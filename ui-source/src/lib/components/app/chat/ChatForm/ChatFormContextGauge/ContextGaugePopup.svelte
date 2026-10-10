@@ -55,11 +55,11 @@
 {#if gaugePopup.open}
 	<div
 		bind:this={cardEl}
-		class="absolute z-50 w-64 -translate-x-1/2 rounded-lg border border-border/50 bg-popover p-3 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/10"
+		class="absolute z-50 w-64 -translate-x-1/2 overflow-y-auto overscroll-contain rounded-lg border border-border/50 bg-popover p-3 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/10"
 		onpointerenter={gaugeCardEnter}
 		onpointerleave={gaugeCardLeave}
 		role="status"
-		style="left: {gaugePopup.centerX}px; bottom: {gaugePopup.bottom}px"
+		style="left: {gaugePopup.centerX}px; bottom: {gaugePopup.bottom}px; max-height: {gaugePopup.maxHeight}px"
 	>
 		<div class="flex flex-col gap-2">
 			<div class="flex items-center gap-2">

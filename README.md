@@ -6,6 +6,8 @@ Native interactive cards, persistent virtual workspace tools and HTML artifacts,
 
 Token usage details includes speculative acceptance rate, average accepted prefix length, cumulative accepted tokens, and current/cumulative KV prefix hit rate. Counters follow the selected conversation branch and survive refresh; refreshing resets the live GPU cache.
 
+The system prompt uses a minimal direct-answer mode and capability-specific Agent instructions. An explicit whole-clause request such as “No tools” or “不要调用工具” disables tools for that turn. See [prompt policy and measured examples](SYSTEM_PROMPT.md).
+
 See [Agent/UI protocol and rebuild](INTERACTIVE_UI.md) and [KV layout, long context and sparse prefill](LONG_CONTEXT.md).
 
 

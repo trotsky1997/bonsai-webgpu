@@ -16,7 +16,7 @@ import {
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
 let lastPointerType = '';
 
-export const gaugePopup = $state({ bottom: 0, centerX: 0, detailsOpen: false, open: false });
+export const gaugePopup = $state({ bottom: 0, centerX: 0, maxHeight: 320, detailsOpen: false, open: false });
 
 function openFrom(trigger: HTMLElement): void {
 	clearTimeout(closeTimer);
@@ -31,6 +31,7 @@ function openFrom(trigger: HTMLElement): void {
 
 		gaugePopup.centerX = Math.min(Math.max(centerX, min), Math.max(min, max));
 		gaugePopup.bottom = frameRect.bottom - triggerRect.top + CONTEXT_GAUGE_DIAL_GAP_PX;
+		gaugePopup.maxHeight = Math.max(96, triggerRect.top - CONTEXT_GAUGE_DIAL_GAP_PX - 16);
 	}
 
 	gaugePopup.open = true;

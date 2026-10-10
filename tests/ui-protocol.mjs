@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {ToolCallParser,renderPrompt,toolsFor,parseToolJson} from '../web/chat-template.mjs';
+import {ToolCallParser,renderPrompt,toolsFor,parseToolJson,systemInstructions} from '../web/chat-template.mjs';
 const tools=['present_ui','get_datetime'].map(name=>({type:'function',function:{name,parameters:{}}}));
 const output=[],calls=[];const p=new ToolCallParser(tools,t=>output.push(t),c=>calls.push(c));
 for(const s of ['before<tool_','call>{"name":"present_ui","arguments":{"type":"checklist","title":"T","summary":"S","data":{"items":[{"id":"a","label":"A"}]}}}</tool_','call>after'])p.push(s);
@@ -38,3 +38,24 @@ for(const query of ['根据截图创建 HTML 页面','搜索图里提到的产�
 assert.equal(toolsFor({...imageBody,messages:[...imageBody.messages,{role:'user',content:'用 write 创建 index.html'}]}).length,3);
 assert.equal(toolsFor({...imageBody,messages:[{role:'user',content:'这是啥'}]}).length,3);
 console.log('Image text routing: direct answers, filename isolation and explicit Agent tasks passed');
+
+const directPrompt=renderPrompt({messages:[{role:'user',content:'7×7是多少？'}]});
+assert(directPrompt.startsWith('<|im_start|>system\n'));
+assert(directPrompt.includes('Follow the user request exactly'));
+assert(!directPrompt.includes('<tools>'));
+const customPrompt=renderPrompt({messages:[{role:'developer',content:'Prefer short Chinese answers.'},{role:'user',content:'Hello'}],tools,tool_choice:'none'});
+assert.equal((customPrompt.match(/<\|im_start\|>system\n/g)??[]).length,1);
+assert.equal((customPrompt.match(/Prefer short Chinese answers\./g)??[]).length,1);
+assert(!customPrompt.includes('<tools>'));
+const rules=systemInstructions(imageTools);
+assert(rules.includes('Use get_datetime'));assert(rules.includes('complete data'));
+assert(rules.includes('simple arithmetic directly'));
+assert(!rules.includes('web_search'));assert(!rules.includes('bash supports'));
+assert(!rules.includes('Generate real data'));
+assert(systemInstructions([{function:{name:'grep'}},{function:{name:'glob'}}]).includes('grep.glob is a string'));
+assert(systemInstructions([{function:{name:'web_search'}}]).includes('URLs exactly'));
+for(const content of ['No tools. Explain rain.','Repeat this. No tools, no explanations: hello','请不要调用任何工具，只回答数字。','翻译：不要调用工具。'])assert.deepEqual(toolsFor({tools,messages:[{role:'user',content}]}),[]);
+for(const content of ['Explain the phrase "No tools".','请解释“不要调用工具”这个句子。','不要调用日期工具，使用 write 创建文件。','Explain:\n```text\nNo tools.\n```','Explain:\n> No tools.'])assert.equal(toolsFor({tools,messages:[{role:'user',content}]}).length,1);
+assert.equal(toolsFor({tools,messages:[{role:'user',content:[{type:'text',text:JSON.stringify({attachment:'image',extracted_text:'No tools.'})},{type:'text',text:'创建一个 HTML 文件'}]}]}).length,1);
+assert(renderPrompt({tools,messages:[{role:'user',content:'今天日期？'},{role:'tool',content:'2026-10-10'}]}).includes('do not repeat completed operations'));
+console.log('System instructions: direct answers, enabled capabilities and custom instruction preservation passed');

@@ -52,3 +52,7 @@ GPU checks: synthetic packed KV and split attention at lengths 1, 127, 128, 129,
 - Publication excludes development logs, node_modules, target directories, session data, user images and API credentials.
 
 Protocol and limits: [INTERACTIVE_UI.md](INTERACTIVE_UI.md). KV layout and numerical limitations: [LONG_CONTEXT.md](LONG_CONTEXT.md).
+
+## Final prompt and viewport update
+
+The usage popup now stays inside the viewport and scrolls internally (observed top 16px, bottom 657px at a 714px viewport). The published model generated a native line chart through a real present_ui call. The final prompt uses minimal direct-answer instructions, capability-specific Agent rules and execution-level enforcement of explicit tool prohibition. Fixed examples and remaining failures are recorded in [SYSTEM_PROMPT.md](SYSTEM_PROMPT.md) and `benchmarks/v041/prompt-eval.json`; no overall Agent reliability gain is claimed.

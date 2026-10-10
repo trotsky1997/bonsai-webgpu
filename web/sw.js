@@ -1,6 +1,6 @@
 // Static application shell. The inference Worker manages large model blobs.
 const base=new URL('./',self.location.href);
-const version='bonsai-webgpu-shell-0.4.1:'+base.pathname;
+const version='bonsai-webgpu-shell-0.4.1.1:'+base.pathname;
 const shell=['./','web/client.mjs?v=0.4.1','web/worker.mjs?v=0.4.1','web/chat-template.mjs?v=0.4.1','web/vendor/jsonrepair.mjs','web/ngram.mjs?v=0.4.1','web/ui-core.mjs?v=0.4.1','web/ocr/worker.mjs?v=0.4.1','web/ocr/ppocr.mjs?v=0.11.4','web/pkg/bonsai_webgpu.js?v=0.4.1','web/pkg/bonsai_webgpu_bg.wasm?v=0.4.1',/* UI_ASSETS */,'_app/version.json','model/manifest.json','favicon.svg','favicon-dark.svg','favicon.ico'].map(path=>new URL(path,base).href);
 self.addEventListener('install',event=>event.waitUntil(caches.open(version).then(cache=>cache.addAll(shell)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('bonsai-webgpu-shell-')&&key.endsWith(':'+base.pathname)&&key!==version)await caches.delete(key);await self.clients.claim();})()));
