@@ -1,8 +1,10 @@
-import init, {Engine} from './pkg/bonsai_webgpu.js?v=0.3.0';
-import {renderPrompt,toolsFor,ToolCallParser} from './chat-template.mjs?v=0.3.0';
-export {renderPrompt} from './chat-template.mjs?v=0.3.0';
+import {NgramDraft} from './ngram.mjs?v=0.4.1';
+import init, {Engine} from './pkg/bonsai_webgpu.js?v=0.4.1';
+import {renderPrompt,toolsFor,ToolCallParser} from './chat-template.mjs?v=0.4.1';
+export {renderPrompt} from './chat-template.mjs?v=0.4.1';
 const manifestSha='13bbc348fe1832a85471abb8cc7794fa99cd6e94492f5018f1002b6ae9eb63a6';
 let cacheName,forceNetwork=false,prefetchDepth;
+let cachedAttention;
 let engine, ready, busy=false, cancelled=false, cached=[], loadInfo;
 const emit=value=>postMessage(value);
 let loadStats=[],cachePromise;
@@ -22,10 +24,10 @@ async function asset(path,expected) {
  if(!cached)await cache.put(url,new Response(bytes,{headers:{'Content-Type':'application/octet-stream'}}));
  loadStats.push({path,cached,cache_ms:matched-started,read_ms:read-matched,verify_cache_ms:performance.now()-read});return bytes;
 }
-async function load(context=2048,batch=8,fast=true) {
+async function load(context=2048,batch=8,fast=true,kvBits=4) {
  const started=performance.now();emit({type:'loading',message:'正在初始化 WebGPU…',percent:0});
  if(!navigator.gpu)throw Error('当前浏览器没有 WebGPU；请使用支持 WebGPU 的新版 Chrome、Edge 或 Safari。');
- const wasmPromise=init({module_or_path:new URL('./pkg/bonsai_webgpu_bg.wasm?v=0.3.0',import.meta.url)});
+ const wasmPromise=init({module_or_path:new URL('./pkg/bonsai_webgpu_bg.wasm?v=0.4.1',import.meta.url)});
  const manifest=JSON.parse(new TextDecoder().decode(await asset('manifest.json',manifestSha)));
  const tk=manifest.tokenizer??{name:'tokenizer.json'};
  const tokenizerPromise=asset(tk.name,tk.sha256);
@@ -34,7 +36,7 @@ async function load(context=2048,batch=8,fast=true) {
  const prefetched=new Map();const prefetch=i=>{if(i<manifest.files.length&&!prefetched.has(i)){const f=manifest.files[i];prefetched.set(i,asset(f.name,f.sha256));}};
  for(let i=0;i<depth;i++)prefetch(i);
  await wasmPromise;const wasm=performance.now();const tokenizer=await tokenizerPromise;const tok=performance.now();
- engine=await Engine.create(tokenizer,context,batch);await engine.set_unroll_projection(fast);const created=performance.now();let upload=0;
+ engine=await Engine.create(tokenizer,context,batch,kvBits);context=engine.memory().context;await engine.set_unroll_projection(fast);const created=performance.now();let upload=0;
  let loaded=0,total=manifest.files.reduce((s,f)=>s+f.bytes,0);
  for(let i=0;i<manifest.files.length;i++){
   const file=manifest.files[i];const bytes=await prefetched.get(i);prefetched.delete(i);prefetch(i+depth);
@@ -42,7 +44,7 @@ async function load(context=2048,batch=8,fast=true) {
   emit({type:'loading',message:`正在加载模型 ${Math.round(loaded/total*100)}%`,percent:loaded/total*100});
  }
  await engine.finish_load();
- loadInfo={runtime_version:'0.3.0',backend:'browser-webgpu',kernel:fast?'signmag-exact-unrolled-g32':'signmag-exact-centered-g32',weight_bits:1,activation_bits:4,context,batch,adapter:engine.adapter(),load_ms:performance.now()-started,load_stages:{wasm_ms:wasm-started,tokenizer_ms:tok-wasm,engine_ms:created-tok,upload_ms:upload,files:loadStats},memory:engine.memory(),checkpoint_sha256:manifest.checkpoint_sha256};
+ loadInfo={runtime_version:'0.4.1',backend:'browser-webgpu',kernel:fast?'signmag-exact-unrolled-g32':'signmag-exact-centered-g32',weight_bits:1,activation_bits:4,kv_bits:kvBits,context,batch,adapter:engine.adapter(),load_ms:performance.now()-started,load_stages:{wasm_ms:wasm-started,tokenizer_ms:tok-wasm,engine_ms:created-tok,upload_ms:upload,files:loadStats},memory:engine.memory(),checkpoint_sha256:manifest.checkpoint_sha256};
  emit({type:'ready',...loadInfo});return loadInfo;
 }
 function sample(candidates,body,rng=Math.random){
@@ -64,22 +66,32 @@ async function generate(id,body){
   const requested=body.top_k??20;if(!Number.isInteger(requested)||requested<1||requested>64)throw Error('浏览器版本 top_k 支持 1–64');
   if((body.repeat_penalty??1)!==1||(body.presence_penalty??0)!==0||(body.frequency_penalty??0)!==0)throw Error('浏览器版本当前要求 repeat_penalty=1、presence_penalty=0、frequency_penalty=0');
   const topk=(body.temperature??0.5)<=0?1:requested;
+  const attention=body.prefill_attention??'flashprefill';if(!['dense','flashprefill'].includes(attention))throw Error('prefill_attention: dense or flashprefill');
+  const cacheKey=attention+':'+(body.flashprefill_alpha??0.1);if(cachedAttention!==cacheKey){engine.reset();cached=[];cachedAttention=cacheKey;}
+  engine.set_prefill_attention(ids.length,attention==='flashprefill',body.flashprefill_alpha??0.1);
   let prefix=0;while(prefix<Math.min(cached.length,ids.length-1)&&cached[prefix]===ids[prefix])prefix++;
   engine.truncate(prefix);cached.length=prefix;let candidates;
   emit({type:'progress',id,prompt_tokens:ids.length,cached_tokens:prefix,processed_tokens:prefix});
   for(let i=prefix;i<ids.length;i+=loadInfo.batch){if(cancelled)break;const chunk=ids.slice(i,i+loadInfo.batch);candidates=await engine.forward(new Uint32Array(chunk),topk);cached.push(...chunk);emit({type:'progress',id,prompt_tokens:ids.length,cached_tokens:prefix,processed_tokens:i+chunk.length});}
+  engine.set_prefill_attention(0,false,0.1);
   const prefill=performance.now()-started;const decodeStart=performance.now();let first=null,generated=[],sent='',finish='length';
   const tools=toolsFor(body);
   const sendText=text=>{if(text){if(first===null)first=performance.now()-started;emit({type:'delta',id,text});}};
-  const parser=tools.length?new ToolCallParser(tools,sendText):null;
+  const sentCalls=new Set();
+  const sendCall=call=>{if(first===null)first=performance.now()-started;sentCalls.add(call.id);emit({type:'tool_calls',id,tool_calls:[call]});};
+  const parser=tools.length?new ToolCallParser(tools,sendText,call=>{if(body.client_capabilities?.includes('interactive-ui.v1')&&['present_ui','update_ui_state'].includes(call.function.name))sendCall(call);}):null;
   const deliver=text=>parser?parser.push(text):sendText(text);
+  const useNgram=body.ngram??true;const draftLimit=body.ngram_tokens??4;if(!Number.isInteger(draftLimit)||draftLimit<1||draftLimit>7)throw Error('ngram_tokens supports 1..7');
+  const ngram=useNgram?new NgramDraft(ids,5,8):null;let speculative=null;const ngramStats={enabled:!!ngram,proposed:0,accepted:0,reused:0,batches:0,forward_calls:0,lookup_ms:0,disabled_for_low_acceptance:false};
   const stops=typeof body.stop==='string'?[body.stop]:body.stop??[];let stopped=false;
   let random=Math.random;
   if(Number.isInteger(body.seed)&&body.seed>=0){let state=(body.seed>>>0)||1;random=()=>{state^=state<<13;state^=state>>>17;state^=state<<5;return(state>>>0)/4294967296;};}
   for(let step=0;!cancelled&&step<max;step++){
    const token=sample(candidates,body,random);
    if(!body.ignore_eos&&(token===151645||token===151643)){finish='stop';break;}
-   generated.push(token);let decoded=engine.decode(new Uint32Array(generated));
+   const acceptedDraft=speculative&&speculative.cursor+1<speculative.inputs.length&&token===speculative.inputs[speculative.cursor+1];
+   if(acceptedDraft)ngramStats.accepted++;
+   generated.push(token);ngram?.append(token);let decoded=engine.decode(new Uint32Array(generated));
    let stopIndex=Infinity;for(const stop of stops){const at=decoded.indexOf(stop);if(at>=0)stopIndex=Math.min(stopIndex,at);}
    if(stopIndex!==Infinity){decoded=decoded.slice(0,stopIndex);stopped=true;finish='stop';}
    // Hold incomplete UTF-8 bytes and potential stop prefixes between tokens.
@@ -87,14 +99,26 @@ async function generate(id,body){
    if(!stopped&&stops.length){let hold=0;for(const stop of stops)for(let n=1;n<stop.length;n++)if(safe.endsWith(stop.slice(0,n)))hold=Math.max(hold,n);safe=safe.slice(0,safe.length-hold);}
    if(safe.length>sent.length){const text=safe.slice(sent.length);sent=safe;deliver(text);}
    if(stopped)break;
-   if(step+1<max){candidates=await engine.forward(new Uint32Array([token]),topk);cached.push(token);}
+   if(step+1<max){
+    if(acceptedDraft){
+     speculative.cursor++;ngramStats.reused++;cached.push(token);candidates=speculative.rows[speculative.cursor];
+    }else{
+     if(speculative){engine.truncate(cached.length);speculative=null;}
+     if(ngramStats.proposed>=32&&ngramStats.accepted/ngramStats.proposed<0.2)ngramStats.disabled_for_low_acceptance=true;
+     const begin=performance.now();const drafts=ngram&&!ngramStats.disabled_for_low_acceptance?ngram.next(Math.min(draftLimit,loadInfo.batch-1,max-step-2,loadInfo.context-cached.length-1)):[];ngramStats.lookup_ms+=performance.now()-begin;
+     if(drafts.length){const inputs=[token,...drafts],rows=await engine.forward_all(new Uint32Array(inputs),topk);speculative={inputs,rows,cursor:0};candidates=rows[0];ngramStats.proposed+=drafts.length;ngramStats.batches++;}
+     else candidates=await engine.forward(new Uint32Array([token]),topk);
+     ngramStats.forward_calls++;cached.push(token);
+    }
+   }
   }
+  engine.truncate(cached.length);
   if(cancelled)finish='stop';
   if(!stopped){const decoded=engine.decode(new Uint32Array(generated));if(decoded.startsWith(sent)&&decoded.length>sent.length)deliver(decoded.slice(sent.length));}
   const calls=parser?.finish(cancelled)??[];
-  if(calls.length){if(first===null)first=performance.now()-started;emit({type:'tool_calls',id,tool_calls:calls.map((call,index)=>({...call,index,id:'call_'+crypto.randomUUID()}))});finish='tool_calls';}
-  emit({type:'done',id,finish_reason:finish,prompt_tokens:ids.length,cached_tokens:prefix,completion_tokens:generated.length,prefill_ms:prefill,decode_ms:performance.now()-decodeStart,ttft_ms:first,tokens:generated,memory:engine.memory()});
- }finally{busy=false;}
+  if(calls.length){for(const call of calls)if(!sentCalls.has(call.id))sendCall(call);finish='tool_calls';}
+  emit({type:'done',id,finish_reason:finish,prompt_tokens:ids.length,cached_tokens:prefix,completion_tokens:generated.length,prefill_ms:prefill,decode_ms:performance.now()-decodeStart,ttft_ms:first,tokens:generated,tool_json_repairs:parser?.repairs??0,ngram:ngramStats,memory:engine.memory()});
+ }finally{engine?.set_prefill_attention(0,false,0.1);busy=false;}
 }
 async function diagnose(id,job){
  if(busy)throw Error('busy');busy=true;
@@ -112,12 +136,15 @@ async function diagnose(id,job){
 onmessage=async({data})=>{
  const {op,id}=data;
  try{
-  if(op==='init'){cacheName=data.cache_name;forceNetwork=!!data.force_network;prefetchDepth=data.prefetch;if(prefetchDepth!==undefined&&(!Number.isInteger(prefetchDepth)||prefetchDepth<1||prefetchDepth>8))throw Error("prefetch 1..8");ready=load(data.context??2048,data.batch??8,(data.fast??true));await ready;}
+  if(op==='init'){cacheName=data.cache_name;forceNetwork=!!data.force_network;prefetchDepth=data.prefetch;if(prefetchDepth!==undefined&&(!Number.isInteger(prefetchDepth)||prefetchDepth<1||prefetchDepth>8))throw Error("prefetch 1..8");ready=load(data.context??2048,data.batch??8,(data.fast??true),data.kv_bits??4);await ready;}
   else if(op==='cancel'){cancelled=true;}
   else if(op==='generate'){await generate(id,data.body);}
   else if(op==='reset'){await ready;if(busy)throw Error('busy');engine.reset();cached=[];emit({type:'reset',id});}
   else if(op==='diagnose'){const result=await diagnose(id,data.job);emit({type:'diagnosed',id,result});}
   else if(op==='info'){await ready;emit({type:'info',id,...loadInfo,memory:engine.memory()});}
+  else if(op==='kv-mode'){await ready;if(busy)throw Error('busy');engine.set_kv_bits(data.bits);cached=[];loadInfo.kv_bits=data.bits;emit({type:'checked',id,result:engine.memory()});}
+  else if(op==='kv-check'){await ready;if(busy)throw Error('busy');emit({type:'checked',id,result:await engine.kv_check(data.count??4097)});}
+  else if(op==='tiled-mode'){await ready;if(busy)throw Error('busy');engine.set_tiled_attention(!!data.enabled);engine.reset();cached=[];emit({type:'checked',id,result:{tiled:!!data.enabled}});}
   else if(op==='profile'){await ready;if(busy)throw Error('busy');emit({type:'checked',id,result:await engine.profile(data.token??9707,data.position??0)});}
   else if(op==='trace'){await ready;if(busy)throw Error('busy');engine.reset();emit({type:'traced',id,result:await engine.trace(data.token)});}
   else if(op==='kernel-check'){await ready;if(busy)throw Error('busy');emit({type:'checked',id,result:await engine.kernel_check()});}
@@ -128,6 +155,11 @@ onmessage=async({data})=>{
    engine.reset();await engine.set_reference(false);let max=0,count=0;
    for(let j=0;j<ids.length;j++){const actual=await engine.logits(ids[j]);for(let i=0;i<actual.length;i++){max=Math.max(max,Math.abs(actual[i]-expected[j][i]));if(actual[i]!==expected[j][i])count++;}}
    engine.reset();cached=[];emit({type:'checked',id,result:{tokens:ids.length,logits:ids.length*151669,max_abs_error:max,unequal_logits:count}});
+  }
+  else if(op==='ngram-check'){
+   await ready;if(busy)throw Error('busy');const ids=Array.from(engine.encode(data.text)).slice(0,loadInfo.batch);const checks=[];
+   for(const k of [1,20,64]){engine.reset();const expected=[];for(const t of ids)expected.push(await engine.forward(new Uint32Array([t]),k));engine.reset();const actual=await engine.forward_all(new Uint32Array(ids),k);checks.push({top_k:k,tokens:ids.length,exact:JSON.stringify(actual)===JSON.stringify(expected)});}
+   engine.reset();cached=[];emit({type:'checked',id,result:checks});
   }
   else if(op==='candidate-check'){
    await ready;if(busy)throw Error('busy');engine.reset();const token=Array.from(engine.encode('Hello'))[0];const logits=await engine.logits(token);

@@ -1,0 +1,392 @@
+{
+  "fp32": {
+    "line-0.png": {
+      "width": 267,
+      "height": 64,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.99493086,
+          "detection_confidence": 0.9059339,
+          "box_points": [
+            [
+              17.0,
+              16.0
+            ],
+            [
+              249.0,
+              16.0
+            ],
+            [
+              249.0,
+              52.0
+            ],
+            [
+              17.0,
+              52.0
+            ]
+          ]
+        }
+      ]
+    },
+    "blank.png": {
+      "width": 320,
+      "height": 320,
+      "lines": []
+    },
+    "rotated.png": {
+      "width": 698,
+      "height": 300,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.9737634,
+          "detection_confidence": 0.8213425,
+          "box_points": [
+            [
+              27.0,
+              183.0
+            ],
+            [
+              365.0,
+              106.0
+            ],
+            [
+              376.0,
+              165.0
+            ],
+            [
+              39.0,
+              242.0
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "int8": {
+    "line-0.png": {
+      "width": 267,
+      "height": 64,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.9950949,
+          "detection_confidence": 0.9059339,
+          "box_points": [
+            [
+              17.0,
+              16.0
+            ],
+            [
+              249.0,
+              16.0
+            ],
+            [
+              249.0,
+              52.0
+            ],
+            [
+              17.0,
+              52.0
+            ]
+          ]
+        }
+      ]
+    },
+    "blank.png": {
+      "width": 320,
+      "height": 320,
+      "lines": []
+    },
+    "rotated.png": {
+      "width": 698,
+      "height": 300,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.9755207,
+          "detection_confidence": 0.8213425,
+          "box_points": [
+            [
+              27.0,
+              183.0
+            ],
+            [
+              365.0,
+              106.0
+            ],
+            [
+              376.0,
+              165.0
+            ],
+            [
+              39.0,
+              242.0
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "int4": {
+    "line-0.png": {
+      "width": 267,
+      "height": 64,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.98589444,
+          "detection_confidence": 0.9059339,
+          "box_points": [
+            [
+              17.0,
+              16.0
+            ],
+            [
+              249.0,
+              16.0
+            ],
+            [
+              249.0,
+              52.0
+            ],
+            [
+              17.0,
+              52.0
+            ]
+          ]
+        }
+      ]
+    },
+    "blank.png": {
+      "width": 320,
+      "height": 320,
+      "lines": []
+    },
+    "rotated.png": {
+      "width": 698,
+      "height": 300,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.93651783,
+          "detection_confidence": 0.8213425,
+          "box_points": [
+            [
+              27.0,
+              183.0
+            ],
+            [
+              365.0,
+              106.0
+            ],
+            [
+              376.0,
+              165.0
+            ],
+            [
+              39.0,
+              242.0
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "binary": {
+    "line-0.png": {
+      "width": 267,
+      "height": 64,
+      "lines": [
+        {
+          "text": "←κ>ν型I兮垄始兮端 /]A夺)ą速R∩→金句的9ωη的，6《0ω",
+          "confidence": 0.084589235,
+          "detection_confidence": 0.9059339,
+          "box_points": [
+            [
+              17.0,
+              16.0
+            ],
+            [
+              249.0,
+              16.0
+            ],
+            [
+              249.0,
+              52.0
+            ],
+            [
+              17.0,
+              52.0
+            ]
+          ]
+        }
+      ]
+    },
+    "blank.png": {
+      "width": 320,
+      "height": 320,
+      "lines": []
+    },
+    "rotated.png": {
+      "width": 698,
+      "height": 300,
+      "lines": [
+        {
+          "text": "₃Rμ犁凹sç确↑的Μ印由RGΩ2A牲艾R@6ω2ω。→失芝作60R1·0",
+          "confidence": 0.15331948,
+          "detection_confidence": 0.8213425,
+          "box_points": [
+            [
+              27.0,
+              183.0
+            ],
+            [
+              365.0,
+              106.0
+            ],
+            [
+              376.0,
+              165.0
+            ],
+            [
+              39.0,
+              242.0
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "w1a8": {
+    "line-0.png": {
+      "width": 267,
+      "height": 64,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.9953393,
+          "detection_confidence": 0.9059339,
+          "box_points": [
+            [
+              17.0,
+              16.0
+            ],
+            [
+              249.0,
+              16.0
+            ],
+            [
+              249.0,
+              52.0
+            ],
+            [
+              17.0,
+              52.0
+            ]
+          ]
+        }
+      ]
+    },
+    "blank.png": {
+      "width": 320,
+      "height": 320,
+      "lines": []
+    },
+    "rotated.png": {
+      "width": 698,
+      "height": 300,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.9737518,
+          "detection_confidence": 0.8213425,
+          "box_points": [
+            [
+              27.0,
+              183.0
+            ],
+            [
+              365.0,
+              106.0
+            ],
+            [
+              376.0,
+              165.0
+            ],
+            [
+              39.0,
+              242.0
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "w4a4": {
+    "line-0.png": {
+      "width": 267,
+      "height": 64,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.994792,
+          "detection_confidence": 0.9059339,
+          "box_points": [
+            [
+              17.0,
+              16.0
+            ],
+            [
+              249.0,
+              16.0
+            ],
+            [
+              249.0,
+              52.0
+            ],
+            [
+              17.0,
+              52.0
+            ]
+          ]
+        }
+      ]
+    },
+    "blank.png": {
+      "width": 320,
+      "height": 320,
+      "lines": []
+    },
+    "rotated.png": {
+      "width": 698,
+      "height": 300,
+      "lines": [
+        {
+          "text": "Rust OCR 2026",
+          "confidence": 0.9943052,
+          "detection_confidence": 0.8213425,
+          "box_points": [
+            [
+              27.0,
+              183.0
+            ],
+            [
+              365.0,
+              106.0
+            ],
+            [
+              376.0,
+              165.0
+            ],
+            [
+              39.0,
+              242.0
+            ]
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 [package]
 name = "bonsai-webgpu"
-version = "0.3.0"
+version = "0.4.1"
 edition = "2021"
 description = "Dedicated Bonsai W1A4 inference in the browser"
 license = "MIT"
@@ -10,6 +10,7 @@ repository = "https://github.com/trotsky1997/bonsai-webgpu"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+bonsai-ui-core = { path = "crates/ui-core" }
 wgpu = { version = "26.0.1", default-features = false, features = ["webgpu", "wgsl"] }
 wasm-bindgen = "0.2.129"
 wasm-bindgen-futures = "0.4"

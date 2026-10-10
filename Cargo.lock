@@ -68,10 +68,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bonsai-ui-core"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "bonsai-webgpu"
-version = "0.3.0"
+version = "0.4.1"
 dependencies = [
  "ahash",
+ "bonsai-ui-core",
  "bytemuck",
  "console_error_panic_hook",
  "futures-channel",

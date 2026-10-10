@@ -1,0 +1,62 @@
+[
+  {
+    "file": "ppocr_rs.wasm",
+    "name": "chinese.png",
+    "text": [
+      "中文识别测试2026"
+    ],
+    "elapsed_ms": 30.682416
+  },
+  {
+    "file": "ppocr_rs.wasm",
+    "name": "line-0.png",
+    "text": [
+      "Rust OCR 2026"
+    ],
+    "elapsed_ms": 15.557875000000001
+  },
+  {
+    "file": "ppocr_rs.wasm",
+    "name": "rotated.png",
+    "text": [
+      "Rust OCR 2026"
+    ],
+    "elapsed_ms": 59.463292
+  },
+  {
+    "file": "ppocr_rs.wasm",
+    "name": "blank.png",
+    "text": [],
+    "elapsed_ms": 25.958083
+  },
+  {
+    "file": "ppocr_rs_fma.wasm",
+    "name": "chinese.png",
+    "text": [
+      "中文识别测试2026"
+    ],
+    "elapsed_ms": 26.0495
+  },
+  {
+    "file": "ppocr_rs_fma.wasm",
+    "name": "line-0.png",
+    "text": [
+      "Rust OCR 2026"
+    ],
+    "elapsed_ms": 14.703791
+  },
+  {
+    "file": "ppocr_rs_fma.wasm",
+    "name": "rotated.png",
+    "text": [
+      "Rust OCR 2026"
+    ],
+    "elapsed_ms": 73.196
+  },
+  {
+    "file": "ppocr_rs_fma.wasm",
+    "name": "blank.png",
+    "text": [],
+    "elapsed_ms": 29.005708000000002
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "file": "assets/v6/det.safetensors",
+    "source": "https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det_safetensors/resolve/07595f982703daf0d4e120a12a01da8073542f3a/model.safetensors",
+    "revision": "07595f982703daf0d4e120a12a01da8073542f3a",
+    "sha256": "cae3c88d2a9902fd0293e6b17990428f54bfa7ec98f800a4368e95423a754d16",
+    "bytes": 1786412
+  },
+  {
+    "file": "assets/v6/det-config.json",
+    "source": "https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det_safetensors/resolve/07595f982703daf0d4e120a12a01da8073542f3a/config.json",
+    "revision": "07595f982703daf0d4e120a12a01da8073542f3a",
+    "sha256": "911288a948ee0aa617bd70cdd299315b990db08c611aebea8afb087d041d7d36",
+    "bytes": 1085
+  },
+  {
+    "file": "assets/v6/det-preprocessor.json",
+    "source": "https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det_safetensors/resolve/07595f982703daf0d4e120a12a01da8073542f3a/preprocessor_config.json",
+    "revision": "07595f982703daf0d4e120a12a01da8073542f3a",
+    "sha256": "74421569a28a78d417db320f9bc039ce0997a1defe2b35f259dfc74299c9f1ed",
+    "bytes": 838
+  },
+  {
+    "file": "assets/v6/rec.safetensors",
+    "source": "https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_rec_safetensors/resolve/6f2d2d51b4b4226d7a2329a02f416f4994106f3a/model.safetensors",
+    "revision": "6f2d2d51b4b4226d7a2329a02f416f4994106f3a",
+    "sha256": "cc3892aba0fbd89afbf6a76d8b7817bb58802668be7a1384ca761ce65612f3f7",
+    "bytes": 4474264
+  },
+  {
+    "file": "assets/v6/rec-config.json",
+    "source": "https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_rec_safetensors/resolve/6f2d2d51b4b4226d7a2329a02f416f4994106f3a/config.json",
+    "revision": "6f2d2d51b4b4226d7a2329a02f416f4994106f3a",
+    "sha256": "d8a130cc18e1833aa5f352e057b5cd0e254c46efc5709823f73d53a8b5a42969",
+    "bytes": 788
+  },
+  {
+    "file": "assets/v6/rec-preprocessor.json",
+    "source": "https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_rec_safetensors/resolve/6f2d2d51b4b4226d7a2329a02f416f4994106f3a/preprocessor_config.json",
+    "revision": "6f2d2d51b4b4226d7a2329a02f416f4994106f3a",
+    "sha256": "196f42619e2e9e0e93a6dc1a622fa1c664628e1c63ce116b376275b3e192125f",
+    "bytes": 75758
+  }
+]

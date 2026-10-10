@@ -6,7 +6,7 @@ export class Engine {
     free(): void;
     [Symbol.dispose](): void;
     adapter(): string;
-    static create(tokenizer_bytes: Uint8Array, capacity: number, batch: number): Promise<Engine>;
+    static create(tokenizer_bytes: Uint8Array, capacity: number, batch: number, kv_bits?: number | null): Promise<Engine>;
     decode(tokens: Uint32Array): string;
     encode(text: string): Uint32Array;
     finish_load(): Promise<void>;
@@ -15,9 +15,18 @@ export class Engine {
      */
     forward(tokens: Uint32Array, top_k: number): Promise<any>;
     /**
+     * Candidate rows for every input position, used for exact lookup-draft verification.
+     */
+    forward_all(tokens: Uint32Array, top_k: number): Promise<any>;
+    /**
      * Real WebGPU pack and projection checks against a Rust scalar oracle.
      */
     kernel_check(): Promise<any>;
+    /**
+     * Synthetic real-GPU verification of KV packing and split attention.
+     * Long positions do not imply a 128K language-model quality evaluation.
+     */
+    kv_check(count: number): Promise<any>;
     load_blob(bytes: Uint8Array, layer: number): void;
     logits(token: number): Promise<Float32Array>;
     logits_chunk(tokens: Uint32Array): Promise<Float32Array>;
@@ -30,11 +39,16 @@ export class Engine {
      */
     profile(token: number, position: number): Promise<any>;
     reset(): void;
+    set_kv_bits(bits: number): void;
+    set_prefill_attention(end: number, sparse: boolean, alpha: number): void;
     set_reference(reference: boolean): Promise<void>;
+    set_tiled_attention(force: boolean): void;
     set_unroll_projection(unroll: boolean): Promise<void>;
     trace(token: number): Promise<any>;
     truncate(pos: number): void;
 }
+
+export function ui_core(request: string): string;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -42,12 +56,14 @@ export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_engine_free: (a: number, b: number) => void;
     readonly engine_adapter: (a: number) => [number, number];
-    readonly engine_create: (a: number, b: number, c: number, d: number) => any;
+    readonly engine_create: (a: number, b: number, c: number, d: number, e: number) => any;
     readonly engine_decode: (a: number, b: number, c: number) => [number, number, number, number];
     readonly engine_encode: (a: number, b: number, c: number) => [number, number, number, number];
     readonly engine_finish_load: (a: number) => any;
     readonly engine_forward: (a: number, b: number, c: number, d: number) => any;
+    readonly engine_forward_all: (a: number, b: number, c: number, d: number) => any;
     readonly engine_kernel_check: (a: number) => any;
+    readonly engine_kv_check: (a: number, b: number) => any;
     readonly engine_load_blob: (a: number, b: any, c: number) => [number, number];
     readonly engine_logits: (a: number, b: number) => any;
     readonly engine_logits_chunk: (a: number, b: number, c: number) => any;
@@ -55,14 +71,18 @@ export interface InitOutput {
     readonly engine_position: (a: number) => number;
     readonly engine_profile: (a: number, b: number, c: number) => any;
     readonly engine_reset: (a: number) => void;
+    readonly engine_set_kv_bits: (a: number, b: number) => [number, number];
+    readonly engine_set_prefill_attention: (a: number, b: number, c: number, d: number) => [number, number];
     readonly engine_set_reference: (a: number, b: number) => any;
+    readonly engine_set_tiled_attention: (a: number, b: number) => void;
     readonly engine_set_unroll_projection: (a: number, b: number) => any;
     readonly engine_trace: (a: number, b: number) => any;
     readonly engine_truncate: (a: number, b: number) => [number, number];
+    readonly ui_core: (a: number, b: number) => [number, number, number, number];
     readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___js_sys_fbe64af394509c1f___Function_fn_wasm_bindgen_fddd185fc99cd29e___JsValue_____wasm_bindgen_fddd185fc99cd29e___sys__Undefined___js_sys_fbe64af394509c1f___Function_fn_wasm_bindgen_fddd185fc99cd29e___JsValue_____wasm_bindgen_fddd185fc99cd29e___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_fddd185fc99cd29e___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__21: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__27: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

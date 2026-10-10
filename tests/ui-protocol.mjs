@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {ToolCallParser,renderPrompt,toolsFor,parseToolJson} from '../web/chat-template.mjs';
+const tools=['present_ui','get_datetime'].map(name=>({type:'function',function:{name,parameters:{}}}));
+const output=[],calls=[];const p=new ToolCallParser(tools,t=>output.push(t),c=>calls.push(c));
+for(const s of ['before<tool_','call>{"name":"present_ui","arguments":{"type":"checklist","title":"T","summary":"S","data":{"items":[{"id":"a","label":"A"}]}}}</tool_','call>after'])p.push(s);
+assert.equal(calls.length,1);assert.equal(calls[0].ui_offset,6);assert.equal(output.join(''),'beforeafter');
+assert.deepEqual(p.finish(),calls);assert.equal(p.finish().length,1);
+assert.equal(new Set(calls.map(c=>c.id)).size,1);
+assert.equal(toolsFor({tools}).length,1);assert.equal(toolsFor({tools,client_capabilities:['interactive-ui.v1']}).length,2);
+const incomplete=new ToolCallParser(tools,()=>{});incomplete.push('<tool_call>{');assert.throws(()=>incomplete.finish(),/截断/);
+const cancelled=new ToolCallParser(tools,()=>{});cancelled.push('<tool_call>{"name":"get_datetime","arguments":{}}</tool_call>');assert.equal(cancelled.finish(true).length,0);
+const closed=new ToolCallParser(tools,()=>{});closed.push('<tool_call>{"name":"present_ui","arguments":{}}</tool_call><tool_call>{');assert.equal(closed.finish(true).length,1);
+const prompt=renderPrompt({messages:[{role:'user',content:'why [interactive-ui.v1]'+JSON.stringify([{id:'x',version:2,data:{rows:[{id:'a',label:'Alpha',values:{n:2}},{id:'b',label:'Beta',values:{n:3}}]},state:{selected:'b'}}])+'[/interactive-ui.v1]'}]});
+assert(prompt.includes('Beta'));assert(!prompt.includes('Alpha'));assert(prompt.includes('"version":2'));
+console.log('UI protocol fixtures passed');
+const invalidUi=new ToolCallParser(tools,()=>{});invalidUi.push('<tool_call>{"name":"present_ui","arguments":{"type":"chart", BAD}}</tool_call>');assert(JSON.parse(invalidUi.finish()[0].function.arguments).__protocol_error);
+const invalidOther=new ToolCallParser(tools,()=>{});invalidOther.push('<tool_call>{"name":"get_datetime","arguments":BAD}</tool_call>');assert(JSON.parse(invalidOther.finish()[0].function.arguments).__protocol_error);
+assert.equal(toolsFor({tools,client_capabilities:['interactive-ui.v1'],messages:[{role:'user',content:'x'},...Array.from({length:3},()=>({role:'tool',content:'UI error: invalid'}))]}).length,1);
+
+const bare=new ToolCallParser(tools,()=>{});for(const c of '{"name":"present_ui","arguments":{"type":"checklist"}}')bare.push(c);assert.equal(bare.finish()[0].function.name,'present_ui');
+const plain=[];const jsonOnly=new ToolCallParser(tools,t=>plain.push(t));jsonOnly.push('{"ordinary":"json"}');assert.equal(jsonOnly.finish().length,0);assert.equal(plain.join(''),'{"ordinary":"json"}');
+
+const repairTools=[{function:{name:'write'}}];
+const repair=new ToolCallParser(repairTools,()=>{});
+repair.push(`<tool_call>{name:'write', arguments:{path:'index.html' content:'<h1>Hello</h1>\n<p>World</p>',},}</tool_call>`);
+assert.equal(JSON.parse(repair.finish()[0].function.arguments).content,'<h1>Hello</h1>\n<p>World</p>');assert.equal(repair.repairs,1);
+assert.throws(()=>parseToolJson("{name:'disabled',arguments:{}}",new Set(['write'])));
+const htmlRepair=parseToolJson('{"name":"write","arguments":{"path":"a.html","content":"<button class="test">Go</button>"}}',new Set(['write']));assert.equal(htmlRepair.arguments.content,'<button class="test">Go</button>');
+console.log('Automatic JSON repair fixtures passed');
+
+const imageTools=[...tools,{type:'function',function:{name:'read',parameters:{}}}];
+const imageContent=query=>[{type:'text',text:JSON.stringify({attachment:'image',name:'private-screenshot.png',extracted_text:'最近使用\n下载\niCloud云盘\n取消\n打开'})},{type:'text',text:query}];
+const imageBody={tools:imageTools,client_capabilities:['interactive-ui.v1'],messages:[{role:'user',content:imageContent('这是啥')}]};
+assert.deepEqual(toolsFor(imageBody),[]);
+const imagePrompt=renderPrompt(imageBody);assert(imagePrompt.includes('<image_text>'));assert(imagePrompt.includes('iCloud云盘'));assert(!imagePrompt.includes('private-screenshot.png'));assert(!imagePrompt.includes('<tools>'));
+for(const query of ['图片里写了什么？','What is this screenshot?','这幅画里的文字是什么'])assert.deepEqual(toolsFor({...imageBody,messages:[{role:'user',content:imageContent(query)}]}),[]);
+for(const query of ['根据截图创建 HTML 页面','搜索图里提到的产品','Convert this image text to a CSV file'])assert.equal(toolsFor({...imageBody,messages:[{role:'user',content:imageContent(query)}]}).length,3);
+assert.equal(toolsFor({...imageBody,messages:[...imageBody.messages,{role:'user',content:'用 write 创建 index.html'}]}).length,3);
+assert.equal(toolsFor({...imageBody,messages:[{role:'user',content:'这是啥'}]}).length,3);
+console.log('Image text routing: direct answers, filename isolation and explicit Agent tasks passed');

@@ -1,0 +1,17 @@
+PP-OCRv6 tiny detection and recognition model weights and character list
+Copyright PaddlePaddle Authors
+Models: https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det_safetensors
+        https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_rec_safetensors
+License: Apache-2.0 (see LICENSE)
+
+Native network construction follows Hugging Face Transformers LCNetV4,
+PP-OCRv6 small detection (tiny configuration), and PP-OCRv6 tiny recognition.
+Reference: https://github.com/huggingface/transformers/tree/main/src/transformers/models
+Copyright Hugging Face, Inc. and contributors; Apache-2.0.
+
+The Rust CPU executor and OCR pipeline are new implementations.
+They load the original safetensors directly and require no inference framework.
+
+Swagger UI 5.33.1 (swagger-ui-dist), Copyright SmartBear Software, Apache-2.0.
+Vendored distribution: demo/swagger/; package integrity and file hashes: SOURCES.json.
+Bundled third-party notices: demo/swagger/swagger-ui-bundle.js.LICENSE.txt.

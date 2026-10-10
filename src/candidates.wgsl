@@ -9,9 +9,9 @@ fn main(@builtin(local_invocation_index) lane:u32,@builtin(workgroup_id) id:vec3
  let size=(p.x+63u)/64u;let start=id.x*size;let end=min(start+size,p.x);
  for(var rank=0u;rank<p.y;rank++){
   var best=-3.402823466e38;var token=0xffffffffu;
-  for(var t=start+lane;t<end;t+=128u){var skip=false;for(var j=0u;j<rank;j++){skip=skip||(removed[j]==t);}let value=logits[t];if !skip&&(value>best||(value==best&&t>token)){best=value;token=t;}}
+  for(var t=start+lane;t<end;t+=128u){var skip=false;for(var j=0u;j<rank;j++){skip=skip||(removed[j]==t);}let value=logits[id.y*p.x+t];if !skip&&(value>best||(value==best&&t>token)){best=value;token=t;}}
   values[lane]=best;tokens[lane]=token;workgroupBarrier();
   for(var step=64u;step>0u;step/=2u){if lane<step{let b=values[lane+step];let bt=tokens[lane+step];if b>values[lane]||(b==values[lane]&&bt>tokens[lane]){values[lane]=b;tokens[lane]=bt;}}workgroupBarrier();}
-  if lane==0u{removed[rank]=tokens[0];output[id.x*p.y+rank]=vec2<u32>(tokens[0],bitcast<u32>(values[0]));}workgroupBarrier();
+  if lane==0u{removed[rank]=tokens[0];output[(id.y*64u+id.x)*p.y+rank]=vec2<u32>(tokens[0],bitcast<u32>(values[0]));}workgroupBarrier();
  }
 }

@@ -26,7 +26,7 @@ const server=http.createServer(async(req,res)=>{
   else if(path==='/bench.html')file=join(root,'web/bench.html');
   else file=resolve(root,'ui',path==='/'?'index.html':'.'+path);
   if(!file.startsWith(root+'/')||path.includes('..'))throw Error('Invalid path');
-  if(path==='/sw.js')file=join(root,'web/sw.js');
+  if(path==='/sw.js')file=join(root,'ui/sw.js');
   const stat=statSync(file);if(!stat.isFile())throw Error('Not a file');
   res.writeHead(200,{'Content-Type':types[extname(file)]||'application/octet-stream','Content-Length':stat.size,'Cache-Control':path.startsWith('/model/')?'public, max-age=3600':'no-store','Cross-Origin-Opener-Policy':'same-origin','Cross-Origin-Embedder-Policy':'require-corp'});
   if(req.method==='HEAD')return res.end();createReadStream(file).pipe(res);

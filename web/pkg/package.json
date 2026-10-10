@@ -2,7 +2,7 @@
   "name": "bonsai-webgpu",
   "type": "module",
   "description": "Dedicated Bonsai W1A4 inference in the browser",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "license": "MIT",
   "repository": {
     "type": "git",

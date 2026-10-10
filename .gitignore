@@ -9,3 +9,8 @@
 .DS_Store
 /benchmarks/browser-latest.json
 /benchmarks/bonsai-mlx-benchmark
+
+**/node_modules/
+**/.svelte-kit/
+**/storybook-static/
+**/.cache/

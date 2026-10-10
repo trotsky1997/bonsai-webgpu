@@ -1,0 +1,165 @@
+{
+  "kv4-final-1": {
+    "job_id": "kv4-final-1",
+    "type": "checked",
+    "id": 1001,
+    "result": {
+      "attention_gpu_wall_ms": 1,
+      "attention_max_abs_error_vs_f64": 0,
+      "full_kv_bytes": 1280,
+      "packing_error_bound_failures": 0,
+      "packing_max_abs_error": 0.35642147064208984,
+      "packing_values": 8192,
+      "tokens": 1
+    },
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 3.5250000059604645
+  },
+  "kv4-final-127": {
+    "job_id": "kv4-final-127",
+    "type": "checked",
+    "id": 1002,
+    "result": {
+      "attention_gpu_wall_ms": 1,
+      "attention_max_abs_error_vs_f64": 9.46603770108495e-9,
+      "full_kv_bytes": 162560,
+      "packing_error_bound_failures": 0,
+      "packing_max_abs_error": 0.35642147064208984,
+      "packing_values": 8192,
+      "tokens": 127
+    },
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 2.2699999809265137
+  },
+  "kv4-final-128": {
+    "job_id": "kv4-final-128",
+    "type": "checked",
+    "id": 1003,
+    "result": {
+      "attention_gpu_wall_ms": 1,
+      "attention_max_abs_error_vs_f64": 9.171605063959531e-9,
+      "full_kv_bytes": 163840,
+      "packing_error_bound_failures": 0,
+      "packing_max_abs_error": 0.35642147064208984,
+      "packing_values": 8192,
+      "tokens": 128
+    },
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 2.580000013113022
+  },
+  "kv4-final-129": {
+    "job_id": "kv4-final-129",
+    "type": "checked",
+    "id": 1004,
+    "result": {
+      "attention_gpu_wall_ms": 0,
+      "attention_max_abs_error_vs_f64": 9.531291993505886e-9,
+      "full_kv_bytes": 165120,
+      "packing_error_bound_failures": 0,
+      "packing_max_abs_error": 0.35642147064208984,
+      "packing_values": 8192,
+      "tokens": 129
+    },
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 1.7999999821186066
+  },
+  "kv4-final-4097": {
+    "job_id": "kv4-final-4097",
+    "type": "checked",
+    "id": 1005,
+    "result": {
+      "attention_gpu_wall_ms": 3,
+      "attention_max_abs_error_vs_f64": 3.116874857170271e-9,
+      "full_kv_bytes": 5244160,
+      "packing_error_bound_failures": 0,
+      "packing_max_abs_error": 0.35642147064208984,
+      "packing_values": 8192,
+      "tokens": 4097
+    },
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 9.020000010728836
+  },
+  "kv4-final-131072": {
+    "job_id": "kv4-final-131072",
+    "type": "checked",
+    "id": 1006,
+    "result": {
+      "attention_gpu_wall_ms": 44,
+      "attention_max_abs_error_vs_f64": 0.000028668806040700037,
+      "full_kv_bytes": 167772160,
+      "packing_error_bound_failures": 0,
+      "packing_max_abs_error": 0.35642147064208984,
+      "packing_values": 8192,
+      "tokens": 131072
+    },
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 231.40000000596046
+  },
+  "kv4-reference-equality": {
+    "job_id": "kv4-reference-equality",
+    "type": "checked",
+    "id": 1002,
+    "result": {
+      "tokens": 9,
+      "logits": 1365021,
+      "max_abs_error": 0,
+      "unequal_logits": 0
+    },
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 254.71000000834465
+  },
+  "kv4-batch-equality": {
+    "job_id": "kv4-batch-equality",
+    "type": "checked",
+    "id": 1003,
+    "result": {
+      "tokens": 512,
+      "max_abs_error": 0,
+      "unequal_logits": 0
+    },
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 3972.7150000035763
+  },
+  "ngram4-exact": {
+    "job_id": "ngram4-exact",
+    "type": "checked",
+    "id": 1001,
+    "result": [
+      {
+        "top_k": 1,
+        "tokens": 8,
+        "exact": true
+      },
+      {
+        "top_k": 20,
+        "tokens": 8,
+        "exact": true
+      },
+      {
+        "top_k": 64,
+        "tokens": 8,
+        "exact": true
+      }
+    ],
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 150.27500000596046
+  }
+}

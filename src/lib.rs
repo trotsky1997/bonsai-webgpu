@@ -1,4 +1,5 @@
 //! Dedicated Bonsai W1A4 browser executor. No native service or generic ML runtime.
+mod kv;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::cell::RefCell;
@@ -95,6 +96,9 @@ struct Memory {
     batch: u32,
     kv_capacity_tokens: u32,
     used_tokens: u32,
+    kv_bits: u32,
+    gpu_kv_full_context_bytes: u64,
+    yarn_factor: f32,
 }
 
 #[wasm_bindgen]
@@ -112,6 +116,12 @@ pub struct Engine {
     uniforms: RefCell<HashMap<[u32;4],wgpu::Buffer>>,
     capacity: u32,
     kv_capacity: u32,
+    kv_bits: u32,
+    short_attention: u32,
+    force_tiled: bool,
+    sparse_prefill: bool,
+    prefill_end: u32,
+    sparse_alpha: f32,
     batch: u32,
     pos: u32,
     weights_bytes: u64,
@@ -150,7 +160,10 @@ impl Engine {
         let buffer=self.device.create_buffer(&wgpu::BufferDescriptor{label:Some(label),size:(bytes.length() as u64+3)&!3,usage:wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_DST|wgpu::BufferUsages::COPY_SRC,mapped_at_creation:true});
         // The WebGPU mapping already lives in JavaScript. Copy directly into
         // that view instead of round-tripping a zero-filled mapping via WASM.
+        #[cfg(target_arch="wasm32")]
         {let view=buffer.slice(..).get_mapped_range();view.as_uint8array().set(bytes,0);}
+        #[cfg(not(target_arch="wasm32"))]
+        {let mut view=buffer.slice(..).get_mapped_range_mut();view.copy_from_slice(&bytes.to_vec());}
         buffer.unmap();buffer
     }
     fn uniform(&self, data: &[u32]) -> wgpu::Buffer {
@@ -206,7 +219,7 @@ impl Engine {
         )
     }
     fn compile_kernel(&mut self,name:&str,source:&str) {
-            let source = source.replace("CONTEXT_LENGTH", &self.capacity.to_string());
+            let source = source.replace("CONTEXT_LENGTH", &self.short_attention.to_string()).replace("YARN_ATTN", &(1.0+0.1*(if self.capacity>32768 {16.0f32}else{4.0f32}).ln()).to_string());
             let module = self
                 .device
                 .create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -242,8 +255,11 @@ impl Engine {
         if let Some(e)=self.device.pop_error_scope().await {return Err(err(format!("reference pipelines: {e}")));}
         Ok(())
     }
-    fn graph(&self,b:u32)->Vec<Dispatch>{self.graph_mode(b,self.optimized)}
-    fn graph_mode(&self, b: u32, optimized:bool) -> Vec<Dispatch> {
+    fn graph(&self,b:u32)->Vec<Dispatch>{self.graph_mode(b,self.optimized,false)}
+    fn graph_mode(&self, b: u32, optimized:bool, all_logits:bool) -> Vec<Dispatch> {
+        let sparse=self.sparse_prefill&&self.kv_bits==4&&b>1&&self.pos>=8192&&self.pos/128+2<(self.prefill_end+127)/128;
+        let tiled=sparse||self.force_tiled||self.pos+b>self.short_attention;
+        let parts=(self.pos+b+127)/128;
         let s = &self.buffers;
         let mut v = Vec::new();
         v.push(self.dispatch(
@@ -290,7 +306,7 @@ impl Engine {
                 v.push(self.dispatch(if self.unroll_projection {"qkv"}else{"qkv_exact"},&[&m["q"].weights,&m["q"].scales,&s["q"],&m["k"].weights,&m["k"].scales,&s["k"],&m["v"].weights,&m["v"].scales,&s["v"],&s["packed"]],[32,b,1],[0,64,b,0]));
             } else {for name in ["q","k","v"]{v.push(self.project(&m[name],&s[name],b,false));}}
             v.push(self.dispatch(
-                "rope",
+                if self.kv_bits==4 {"rope_q4"}else{"rope"},
                 &[
                     &s["q"],
                     &s["k"],
@@ -304,15 +320,19 @@ impl Engine {
                 [24, b, 1],
                 [self.kv_capacity, 0, 0, 0],
             ));
-            if optimized {v.push(self.dispatch("attention_pack",&[&s["q"],&l.kv,&s["packed"],&s["state"]],[16,b,1],[self.kv_capacity,0,0,0]));}
-            else {
-            v.push(self.dispatch(
-                "attention",
-                &[&s["q"], &l.kv, &s["att"], &s["state"]],
-                [16, b, 1],
-                [self.kv_capacity, 0, 0, 0],
-            ));
-            v.push(pack(&s["att"], 2048));
+            if sparse {
+                v.push(self.dispatch("flash_pool_q4",&[&l.kv,&s["pooled"],&s["state"]],[8,parts,1],[self.kv_capacity,parts,if sparse {1}else{0},0]));
+                v.push(self.dispatch("flash_select",&[&s["q"],&s["pooled"],&s["selected"],&s["state"]],[16,1,1],[0,parts,0,self.sparse_alpha.to_bits()]));
+            }
+            if tiled {
+                v.push(self.dispatch(if self.kv_bits==4 {"attention_partial_q4"}else{"attention_partial"},&[&s["q"],&l.kv,&s["parts"],&s["state"],&s["selected"]],[16,b,parts],[self.kv_capacity,parts,if sparse {1}else{0},0]));
+                v.push(self.dispatch("attention_merge",&[&s["parts"],&s["att"]],[16,b,1],[parts,0,0,0]));
+                v.push(pack(&s["att"],2048));
+            } else if optimized {
+                v.push(self.dispatch(if self.kv_bits==4 {"attention_pack_q4"}else{"attention_pack"},&[&s["q"],&l.kv,&s["packed"],&s["state"]],[16,b,1],[self.kv_capacity,0,0,0]));
+            } else {
+                v.push(self.dispatch(if self.kv_bits==4 {"attention_q4"}else{"attention"},&[&s["q"],&l.kv,&s["att"],&s["state"]],[16,b,1],[self.kv_capacity,0,0,0]));
+                v.push(pack(&s["att"],2048));
             }
             v.push(self.project(&m["o"], &s["o"], b, false));
             if optimized {v.push(self.dispatch("norm_add",&[&s["x"],&n["post_norm"],&s["z"],&s["o"]],[1,b,1],[2048,b,0,0]));}
@@ -338,10 +358,10 @@ impl Engine {
         }
         if optimized {v.push(self.dispatch("norm_add",&[&s["x"],&self.vectors["norm"],&s["z"],&s["o"]],[1,b,1],[2048,b,0,0]));}else{v.push(norm(&self.vectors["norm"]));}
         v.push(pack(&s["z"], 2048));
-        v.push(self.project(&self.matrices["embed"], &s["logits"], b, true));
+        v.push(self.project(&self.matrices["embed"], &s["logits"], b, !all_logits));
         v
     }
-    async fn execute(&mut self, tokens: &[u32], full: bool, top_k: u32) -> Result<Vec<f32>> {
+    async fn execute(&mut self, tokens: &[u32], full: bool, top_k: u32, all: bool) -> Result<Vec<f32>> {
         let b = tokens.len() as u32;
         if b == 0
             || b > self.batch
@@ -354,32 +374,39 @@ impl Engine {
             return Err(err("model is not loaded"));
         }
         if self.pos + b > self.kv_capacity {
-            let next = ((self.pos + b + 255) / 256 * 256).min(self.capacity);
+            let next = (self.kv_capacity*2).max((self.pos+b+255)/256*256).min(self.capacity);
+            let width=if self.kv_bits==4 {160u32}else{1024u32};
             let mut encoder = self.device.create_command_encoder(&Default::default());
-            let new_size = next as u64 * 1024 * 4;
+            let new_size = next as u64 * width as u64 * 4;
             let mut growth=Vec::new();
             for l in &self.layers {
                 let kv = self.device.create_buffer(&wgpu::BufferDescriptor {
-                    label: Some("grown FP32 KV"),
+                    label: Some("grown quantized KV"),
                     size: new_size * 2,
                     usage: wgpu::BufferUsages::STORAGE
                         | wgpu::BufferUsages::COPY_SRC
                         | wgpu::BufferUsages::COPY_DST,
                     mapped_at_creation: false,
                 });
-                let dispatch=self.dispatch("kv_grow",&[&l.kv,&kv],[(self.kv_capacity*1024*2+255)/256,1,1],[self.kv_capacity,next,0,0]);
+                let groups=(self.kv_capacity*width*2+255)/256;
+                let dispatch=self.dispatch("kv_grow",&[&l.kv,&kv],[groups.min(65535),(groups+65534)/65535,1],[self.kv_capacity,next,if self.kv_bits==4 {5}else{1},width]);
                 growth.push((kv,dispatch));
             }
             {let mut pass=encoder.begin_compute_pass(&Default::default());
-             for (_,d) in &growth {pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],1,1);}}
+             for (_,d) in &growth {pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],d.dims[1],1);}}
             self.queue.submit(Some(encoder.finish()));
             for (l,(kv,_)) in self.layers.iter_mut().zip(growth) {l.kv=kv;}
             self.kv_capacity = next;
             self.kv_bytes = new_size * 2 * 28;
             self.graphs.clear();
         }
-        if !self.graphs.contains_key(&b) {
-            self.graphs.insert(b, self.graph(b));
+        let sparse=self.sparse_prefill&&self.kv_bits==4&&b>1&&self.pos>=8192&&self.pos/128+2<(self.prefill_end+127)/128;
+        let graph_key=b+if sparse {512}else{0}+if all{256}else{0}+if self.force_tiled||self.pos+b>self.short_attention {((self.pos+b+127)/128)*1024}else{0};
+        // A tiled graph depends on the active split count. Keep only the current
+        // split to bound bind groups during a 128K prefill.
+        if graph_key>=1024 {self.graphs.retain(|key,_|*key<1024||*key/1024==graph_key/1024);}
+        if !self.graphs.contains_key(&graph_key) {
+            self.graphs.insert(graph_key, self.graph_mode(b,self.optimized,all));
         }
         self.queue
             .write_buffer(&self.buffers["tokens"], 0, bytemuck::cast_slice(tokens));
@@ -389,26 +416,27 @@ impl Engine {
             bytemuck::cast_slice(&[self.pos, b, 0, 0]),
         );
         let top_k=top_k.clamp(1,64);
-        if !full && !self.candidates.contains_key(&top_k) {
-            let d=self.dispatch(if top_k==1{"candidates"}else{"candidates_cached"},&[&self.buffers["logits"],&self.buffers["candidates"]],[64,1,1],[151669,top_k,0,0]);
-            self.candidates.insert(top_k,d);
+        let count=if all{b}else{1};let candidate_key=top_k+count*256;
+        if !full && !self.candidates.contains_key(&candidate_key) {
+            let d=self.dispatch(if top_k==1{"candidates"}else{"candidates_cached"},&[&self.buffers["logits"],&self.buffers["candidates"]],[64,count,1],[151669,top_k,0,0]);
+            self.candidates.insert(candidate_key,d);
         }
         let mut encoder=self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor{label:Some("Bonsai token/chunk")});
         {
             let mut pass=encoder.begin_compute_pass(&wgpu::ComputePassDescriptor{label:Some("W1A4 graph"),timestamp_writes:None});
-            for d in &self.graphs[&b] {
+            for d in &self.graphs[&graph_key] {
                 pass.set_pipeline(&d.handle);
                 pass.set_bind_group(0,&d.group,&[]);
                 pass.dispatch_workgroups(d.dims[0],d.dims[1],d.dims[2]);
             }
             if !full {
-                let d=&self.candidates[&top_k];
+                let d=&self.candidates[&candidate_key];
                 pass.set_pipeline(&d.handle);
                 pass.set_bind_group(0,&d.group,&[]);
-                pass.dispatch_workgroups(64,1,1);
+                pass.dispatch_workgroups(64,count,1);
             }
         }
-        let (source,size)=if full{(&self.buffers["logits"],151669*4u64)}else{(&self.buffers["candidates"],64*top_k as u64*8)};
+        let (source,size)=if full{(&self.buffers["logits"],151669*4u64)}else{(&self.buffers["candidates"],64*top_k as u64*8*count as u64)};
         encoder.copy_buffer_to_buffer(source, 0, &self.buffers["readback"], 0, size);
         self.queue.submit(Some(encoder.finish()));
         let slice = self.buffers["readback"].slice(..size);
@@ -430,10 +458,11 @@ impl Engine {
 #[wasm_bindgen]
 impl Engine {
     #[wasm_bindgen(js_name=create)]
-    pub async fn create(tokenizer_bytes: Vec<u8>, capacity: u32, batch: u32) -> Result<Engine> {
+    pub async fn create(tokenizer_bytes: Vec<u8>, capacity: u32, batch: u32, kv_bits: Option<u32>) -> Result<Engine> {
         console_error_panic_hook::set_once();
-        if !(128..=4096).contains(&capacity) || !(1..=32).contains(&batch) {
-            return Err(err("context 128..4096, batch 1..32"));
+        let kv_bits=kv_bits.unwrap_or(4);
+        if !(128..=131072).contains(&capacity) || !(1..=32).contains(&batch) || !matches!(kv_bits,4|32) {
+            return Err(err("context 128..131072, batch 1..32, kv_bits 4 or 32"));
         }
         let tokenizer = load_tokenizer(&tokenizer_bytes)?;
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
@@ -450,6 +479,15 @@ impl Engine {
         let adapter_info = format!("{:?}", adapter.get_info());
         let fuse_qkv=adapter.limits().max_storage_buffers_per_shader_stage>=10;
         let mut limits = wgpu::Limits::default();
+        // attention_pack uses four bytes per context token plus 4608 fixed bytes.
+        // WebGPU's default limit is 16 KiB even on adapters offering 32 KiB.
+        limits.max_compute_workgroup_storage_size=adapter.limits().max_compute_workgroup_storage_size.min(32768);
+        let supported=((limits.max_compute_workgroup_storage_size.saturating_sub(4608))/4/128)*128;
+        let short_attention=capacity.min(supported).min(4096);
+        let kv_size=capacity as u64*if kv_bits==4 {1280}else{8192};
+        if kv_size>adapter.limits().max_storage_buffer_binding_size as u64||kv_size>adapter.limits().max_buffer_size {return Err(err("当前 GPU 的单缓冲区上限不足以支持所选上下文；请选择更短的上下文。"));}
+        limits.max_storage_buffer_binding_size=limits.max_storage_buffer_binding_size.max(kv_size as u32);
+        limits.max_buffer_size=limits.max_buffer_size.max(kv_size);
         if fuse_qkv { limits.max_storage_buffers_per_shader_stage=10; }
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
@@ -475,6 +513,7 @@ impl Engine {
             uniforms: RefCell::new(HashMap::new()),
             capacity,
             kv_capacity: capacity.min(256),
+            kv_bits,short_attention,force_tiled:false,sparse_prefill:false,prefill_end:0,sparse_alpha:0.1,
             batch,
             pos: 0,
             weights_bytes: 0,
@@ -506,6 +545,14 @@ impl Engine {
             ("silu_pack",include_str!("silu_pack.wgsl")),
             ("kv_grow",include_str!("kv_grow.wgsl")),
             ("attention_pack",include_str!("attention_pack.wgsl")),
+            ("rope_q4",include_str!("rope_q4.wgsl")),
+            ("attention_q4",include_str!("attention_q4.wgsl")),
+            ("attention_pack_q4",include_str!("attention_pack_q4.wgsl")),
+            ("attention_partial",include_str!("attention_partial.wgsl")),
+            ("attention_partial_q4",include_str!("attention_partial_q4.wgsl")),
+            ("attention_merge",include_str!("attention_merge.wgsl")),
+            ("flash_pool_q4",include_str!("flash_pool_q4.wgsl")),
+            ("flash_select",include_str!("flash_select.wgsl")),
             ("candidates_cached",include_str!("candidates_cached.wgsl")),
         ] {
             if (name=="qkv" || name=="qkv_exact") && !fuse_qkv { continue; }
@@ -525,10 +572,13 @@ impl Engine {
             ("gate", 6144 * batch),
             ("up", 6144 * batch),
             ("act", 6144 * batch),
-            ("logits", 151669),
-            ("candidates", 64 * 64 * 2),
+            ("logits", 151669 * batch),
+            ("candidates", 64 * 64 * 2 * batch),
             ("state", 4),
             ("tokens", batch),
+            ("parts", ((capacity+127)/128)*batch*16*130),
+            ("selected", 16*((capacity+127)/128+1)),
+            ("pooled", 8*((capacity+127)/128)*128),
         ] {
             let buf = engine.buffer(
                 name,
@@ -592,12 +642,17 @@ impl Engine {
             );
         }
         let mut encoder=self.device.create_command_encoder(&Default::default());
-        {let mut pass=encoder.begin_compute_pass(&Default::default());for (_,d) in &expanded {pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],1,1);}}
+        {let mut pass=encoder.begin_compute_pass(&Default::default());for (_,d) in &expanded {pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],d.dims[1],1);}}
         self.queue.submit(Some(encoder.finish()));
         for n in blob.vectors {
             let data = get(n.data)?;
             self.weights_bytes += data.length() as u64;
-            vectors.insert(n.name, self.data_js("norm/frequencies", &data));
+            if n.name=="freq"&&self.capacity>32768 {
+                let low=(128.0f64*(8192.0/(32.0*std::f64::consts::TAU)).ln()/(2.0*1_000_000.0f64.ln())).floor();
+                let high=(128.0f64*(8192.0/std::f64::consts::TAU).ln()/(2.0*1_000_000.0f64.ln())).ceil();
+                let freq:Vec<f32>=(0..64).map(|i|{let inv=1_000_000.0f64.powf(-(2*i) as f64/128.0);let ramp=((i as f64-low)/(high-low)).clamp(0.0,1.0);(inv/16.0*ramp+inv*(1.0-ramp)) as f32}).collect();
+                vectors.insert(n.name,self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor{label:Some("experimental YaRN x16"),contents:bytemuck::cast_slice(&freq),usage:wgpu::BufferUsages::STORAGE}));
+            }else{vectors.insert(n.name, self.data_js("norm/frequencies", &data));}
         }
         if layer == -1 {
             self.matrices = matrices;
@@ -606,10 +661,10 @@ impl Engine {
             if layer as usize != self.layers.len() || layer >= 28 {
                 return Err(err("load layers in order"));
             }
-            let size = self.kv_capacity as u64 * 1024 * 2 * 4;
+            let size = self.kv_capacity as u64 * if self.kv_bits==4 {1280}else{8192};
             self.kv_bytes += size;
             let kv = self.buffer(
-                "FP32 KV",
+                "KV cache",
                 size,
                 wgpu::BufferUsages::STORAGE
                     | wgpu::BufferUsages::COPY_SRC
@@ -643,6 +698,57 @@ impl Engine {
     }
     pub async fn set_reference(&mut self, reference:bool)->Result<()>{if reference {self.prepare_reference().await?;}self.optimized=!reference;self.graphs.clear();Ok(())}
     pub async fn set_unroll_projection(&mut self, unroll:bool)->Result<()>{if !unroll {self.prepare_reference().await?;}self.unroll_projection=unroll;self.graphs.clear();Ok(())}
+    /// Synthetic real-GPU verification of KV packing and split attention.
+    /// Long positions do not imply a 128K language-model quality evaluation.
+    pub async fn kv_check(&self,count:u32)->Result<JsValue>{
+        if self.kv_bits!=4||count==0||count>self.capacity{return Err(err("kv_check requires INT4 KV and count <= context"));}
+        let data=|name:&str,values:&[u32]|self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor{label:Some(name),contents:bytemuck::cast_slice(values),usage:wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_SRC});
+        let b=self.batch.min(4);let cap=128u32;
+        let kval:Vec<f32>=(0..b*1024).map(|i|if i<1024 {0.0}else{((i*97%997)as f32-498.0)/199.0}).collect();
+        let vval:Vec<f32>=(0..b*1024).map(|i|((i*31%991)as f32-495.0)/99.0).collect();
+        let k=data("check k",bytemuck::cast_slice(&kval));let v=data("check v",bytemuck::cast_slice(&vval));
+        let q=self.buffer("check q",b as u64*2048*4,wgpu::BufferUsages::STORAGE);
+        let norm=data("check norm",&vec![1.0f32.to_bits();128]);let freq=data("check freq",&vec![0;64]);let state=data("check state",&[0,b,0,0]);
+        let packed=self.buffer("check packed KV",cap as u64*1280,wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_SRC);
+        let d=self.dispatch("rope_q4",&[&q,&k,&v,&norm,&norm,&packed,&freq,&state],[24,b,1],[cap,0,0,0]);
+        let mut encoder=self.device.create_command_encoder(&Default::default());{let mut pass=encoder.begin_compute_pass(&Default::default());pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(24,b,1);}self.queue.submit(Some(encoder.finish()));
+        let actual=self.read_buffer(&packed,cap as u64*1280).await?;let factor=1.0+0.1*(if self.capacity>32768 {16.0f32}else{4.0f32}).ln();let mut errors=0u32;let mut pack_max=0.0f32;
+        for row in 0..b as usize{for head in 0..8usize{
+            let raw=&kval[row*1024+head*128..row*1024+head*128+128];let mut sums:Vec<f32>=raw.iter().map(|x|x*x).collect();for step in [64,32,16,8,4,2,1]{for i in 0..step{sums[i]+=sums[i+step];}}
+            let inv=(sums[0]/128.0+1e-6).sqrt().recip();
+            for dim in 0..128usize{let g=head*4+dim/32;let ko=(g*cap as usize+row)*5;let vo=cap as usize*160+row*160+g*5;
+                for (offset,expected) in [(ko,raw[dim]*inv*factor),(vo,vval[row*1024+head*128+dim])]{let decoded=kv::decode(&actual[offset..offset+5],dim%32);let error=(decoded-expected).abs();pack_max=pack_max.max(error);let scale=f32::from_bits(actual[offset+4]);if !decoded.is_finite()||error>scale*0.5001+2e-5*(1.0+expected.abs()){errors+=1;}}
+            }
+        }}
+        let count=count as usize;let parts=(count+127)/128;let mut bytes=vec![0u32;count*320];let query:Vec<f32>=(0..2048).map(|i|((i*11%61)as f32-30.0)/97.0).collect();let mut logits=Vec::with_capacity(count);
+        for t in 0..count{let mut dot=0.0f32;for group in 0..4{let mut a=[0.;32];let mut v=[0.;32];for j in 0..32{a[j]=(((t*17+(group*32+j)*31)%101)as f32-50.0)/37.0;v[j]=(((t*13+(group*32+j)*7)%97)as f32-48.0)/41.0;}
+            let kp=kv::encode(&a);let vp=kv::encode(&v);let ko=(group*count+t)*5;let vo=count*160+t*160+group*5;bytes[ko..ko+5].copy_from_slice(&kp);bytes[vo..vo+5].copy_from_slice(&vp);for j in 0..32{dot+=query[group*32+j]*kv::decode(&kp,j);}}
+            logits.push((dot*0.08838834764831845)as f64);
+        }
+        let kv=data("long check KV",&bytes);let query=data("long check query",bytemuck::cast_slice(&query));let state=data("long check state",&[(count-1)as u32,1,0,0]);let selected=data("unused selected",&[0;16]);
+        let partial=self.buffer("long check partial",parts as u64*16*130*4,wgpu::BufferUsages::STORAGE);let out=self.buffer("long check output",2048*4,wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_SRC);
+        let a=self.dispatch("attention_partial_q4",&[&query,&kv,&partial,&state,&selected],[1,1,parts as u32],[count as u32,parts as u32,0,0]);let m=self.dispatch("attention_merge",&[&partial,&out],[1,1,1],[parts as u32,0,0,0]);
+        let start=js_sys::Date::now();let mut encoder=self.device.create_command_encoder(&Default::default());{let mut pass=encoder.begin_compute_pass(&Default::default());for d in [&a,&m]{pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],d.dims[1],d.dims[2]);}}self.queue.submit(Some(encoder.finish()));
+        let values=self.read_buffer(&out,128*4).await?;let elapsed=js_sys::Date::now()-start;let maximum=logits.iter().copied().fold(f64::NEG_INFINITY,f64::max);let weights:Vec<f64>=logits.iter().map(|x|(x-maximum).exp()).collect();let total: f64=weights.iter().sum();let mut expected=[0f64;128];
+        for t in 0..count{for d in 0..128{let base=count*160+t*160+(d/32)*5;expected[d]+=weights[t]*kv::decode(&bytes[base..base+5],d%32)as f64/total;}}
+        let max_error=(0..128).map(|i|(f32::from_bits(values[i])as f64-expected[i]).abs()).fold(0f64,f64::max);
+        Ok(serde_json::json!({"tokens":count,"packing_values":b*1024*2,"packing_error_bound_failures":errors,"packing_max_abs_error":pack_max,"attention_max_abs_error_vs_f64":max_error,"attention_gpu_wall_ms":elapsed,"full_kv_bytes":count*1280}).serialize(&serde_wasm_bindgen::Serializer::json_compatible()).map_err(err)?)
+    }
+
+    pub fn set_kv_bits(&mut self,bits:u32)->Result<()> {
+        if !matches!(bits,4|32){return Err(err("kv_bits must be 4 or 32"));}
+        let full=self.capacity as u64*if bits==4 {1280}else{8192};
+        if full>self.device.limits().max_storage_buffer_binding_size as u64{return Err(err("reload the engine with this KV precision"));}
+        self.kv_bits=bits;self.pos=0;self.kv_capacity=self.capacity.min(256);self.graphs.clear();
+        let size=self.kv_capacity as u64*if bits==4 {1280}else{8192};
+        let fresh:Vec<_>=(0..self.layers.len()).map(|_|self.buffer("changed KV precision",size,wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_SRC|wgpu::BufferUsages::COPY_DST)).collect();
+        for(l,kv)in self.layers.iter_mut().zip(fresh){l.kv=kv;}self.kv_bytes=size*self.layers.len() as u64;Ok(())
+    }
+    pub fn set_prefill_attention(&mut self, end:u32, sparse:bool, alpha:f32)->Result<()> {
+        if end>self.capacity||!alpha.is_finite()||alpha<=0.0||alpha>1.0{return Err(err("prefill alpha must be (0,1] and end <= context"));}
+        self.prefill_end=end;self.sparse_prefill=sparse;self.sparse_alpha=alpha;self.graphs.clear();Ok(())
+    }
+    pub fn set_tiled_attention(&mut self, force:bool){self.force_tiled=force;self.graphs.clear();}
     pub fn reset(&mut self) {
         self.pos = 0;
     }
@@ -668,12 +774,15 @@ impl Engine {
             batch: self.batch,
             kv_capacity_tokens: self.kv_capacity,
             used_tokens: self.pos,
+            kv_bits:self.kv_bits,
+            gpu_kv_full_context_bytes:self.capacity as u64*28*if self.kv_bits==4 {1280}else{8192},
+            yarn_factor:if self.capacity>32768 {16.0}else{4.0},
         })
         .map_err(err)
     }
     /// Returns [token-id-as-u32-bits, score] pairs from GPU partitions, globally sorted.
     pub async fn forward(&mut self, tokens: Vec<u32>, top_k: u32) -> Result<JsValue> {
-        let data = self.execute(&tokens, false, top_k).await?;
+        let data = self.execute(&tokens, false, top_k, false).await?;
         let mut candidates: Vec<(u32, f32)> = data
             .chunks_exact(2)
             .map(|p| (p[0].to_bits(), p[1]))
@@ -683,11 +792,22 @@ impl Engine {
         candidates.truncate(top_k.clamp(1, 64) as usize);
         serde_wasm_bindgen::to_value(&candidates).map_err(err)
     }
+    /// Candidate rows for every input position, used for exact lookup-draft verification.
+    pub async fn forward_all(&mut self, tokens: Vec<u32>, top_k: u32) -> Result<JsValue> {
+        let top_k=top_k.clamp(1,64);
+        let data=self.execute(&tokens,false,top_k,true).await?;
+        let rows:Vec<Vec<(u32,f32)>>=data.chunks_exact(64*top_k as usize*2).map(|row|{
+            let mut candidates:Vec<(u32,f32)>=row.chunks_exact(2).map(|p|(p[0].to_bits(),p[1])).filter(|p|p.0<151669&&p.1.is_finite()).collect();
+            candidates.sort_unstable_by(|a,b|b.1.total_cmp(&a.1).then_with(||b.0.cmp(&a.0)));
+            candidates.truncate(top_k as usize);candidates
+        }).collect();
+        serde_wasm_bindgen::to_value(&rows).map_err(err)
+    }
     pub async fn logits(&mut self, token: u32) -> Result<Vec<f32>> {
-        self.execute(&[token], true, 1).await
+        self.execute(&[token], true, 1, false).await
     }
     pub async fn logits_chunk(&mut self, tokens: Vec<u32>) -> Result<Vec<f32>> {
-        self.execute(&tokens, true, 1).await
+        self.execute(&tokens, true, 1, false).await
     }
     /// Real WebGPU pack and projection checks against a Rust scalar oracle.
     pub async fn kernel_check(&self) -> Result<JsValue> {
@@ -883,7 +1003,7 @@ impl Engine {
             0,
             bytemuck::cast_slice(&[self.pos, 1, 0, 0]),
         );
-        let graph = self.graph_mode(1,false);
+        let graph = self.graph_mode(1,false,false);
         let mut snapshots = Vec::new();
         let fields = [
             ("embed", "x", 2048),
@@ -946,4 +1066,9 @@ impl Engine {
             .serialize(&serde_wasm_bindgen::Serializer::json_compatible())
             .map_err(err)
     }
+}
+
+#[wasm_bindgen]
+pub fn ui_core(request: &str) -> std::result::Result<String, JsValue> {
+    bonsai_ui_core::dispatch(request).map_err(|e| JsValue::from_str(&e))
 }

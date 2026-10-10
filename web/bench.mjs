@@ -11,7 +11,8 @@ worker.onmessage=({data})=>{
  else listeners.get(data.id)?.(data);
 };
 worker.onerror=e=>{status.textContent=e.message;rejectReady(e);};
-worker.postMessage({op:'init',context:2048,batch:8,fast:variant!=='reference'});
+const benchParams=new URLSearchParams(location.search);
+worker.postMessage({op:'init',context:Number(benchParams.get('context')??2048),kv_bits:Number(benchParams.get('kv_bits')??32),batch:8,fast:variant!=='reference'});
 function command(op,args={}){
  const id=++serial;let content='',first=null,tool_calls=[];const start=performance.now();
  return new Promise((resolve,reject)=>{listeners.set(id,event=>{
@@ -37,10 +38,14 @@ async function run(job){
  else if(job.op==='generate'){await command('reset');result=await command('generate',{body:job.body});}
  else if(job.op==='diagnose')result=await command('diagnose',{job:job.job});
  else if(job.op==='info')result=await command('info');
+ else if(job.op==='kv-mode')result=await command('kv-mode',{bits:job.bits});
+ else if(job.op==='kv-check')result=await command('kv-check',{count:job.count});
+ else if(job.op==='tiled-mode')result=await command('tiled-mode',{enabled:job.enabled});
  else if(job.op==='profile')result=await command('profile',{token:job.token,position:job.position});
  else if(job.op==='trace')result=await command('trace',{token:job.token});
  else if(job.op==='kernel-check')result=await command('kernel-check');
  else if(job.op==='equivalence-check')result=await command('equivalence-check',{text:job.text,limit:job.limit});
+ else if(job.op==='ngram-check')result=await command('ngram-check',{text:job.text});
  else if(job.op==='candidate-check')result=await command('candidate-check');
  else if(job.op==='tokenize-check')result=await command('tokenize-check',{texts:job.texts});
  else if(job.op==='batch-check')result=await command('batch-check',{text:job.text,limit:job.limit});

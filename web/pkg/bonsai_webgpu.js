@@ -36,12 +36,13 @@ export class Engine {
      * @param {Uint8Array} tokenizer_bytes
      * @param {number} capacity
      * @param {number} batch
+     * @param {number | null} [kv_bits]
      * @returns {Promise<Engine>}
      */
-    static create(tokenizer_bytes, capacity, batch) {
+    static create(tokenizer_bytes, capacity, batch, kv_bits) {
         const ptr0 = passArray8ToWasm0(tokenizer_bytes, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.engine_create(ptr0, len0, capacity, batch);
+        const ret = wasm.engine_create(ptr0, len0, capacity, batch, isLikeNone(kv_bits) ? Number.MAX_SAFE_INTEGER : (kv_bits) >>> 0);
         return ret;
     }
     /**
@@ -103,11 +104,33 @@ export class Engine {
         return ret;
     }
     /**
+     * Candidate rows for every input position, used for exact lookup-draft verification.
+     * @param {Uint32Array} tokens
+     * @param {number} top_k
+     * @returns {Promise<any>}
+     */
+    forward_all(tokens, top_k) {
+        const ptr0 = passArray32ToWasm0(tokens, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.engine_forward_all(this.__wbg_ptr, ptr0, len0, top_k);
+        return ret;
+    }
+    /**
      * Real WebGPU pack and projection checks against a Rust scalar oracle.
      * @returns {Promise<any>}
      */
     kernel_check() {
         const ret = wasm.engine_kernel_check(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Synthetic real-GPU verification of KV packing and split attention.
+     * Long positions do not imply a 128K language-model quality evaluation.
+     * @param {number} count
+     * @returns {Promise<any>}
+     */
+    kv_check(count) {
+        const ret = wasm.engine_kv_check(this.__wbg_ptr, count);
         return ret;
     }
     /**
@@ -171,12 +194,38 @@ export class Engine {
         wasm.engine_reset(this.__wbg_ptr);
     }
     /**
+     * @param {number} bits
+     */
+    set_kv_bits(bits) {
+        const ret = wasm.engine_set_kv_bits(this.__wbg_ptr, bits);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
+     * @param {number} end
+     * @param {boolean} sparse
+     * @param {number} alpha
+     */
+    set_prefill_attention(end, sparse, alpha) {
+        const ret = wasm.engine_set_prefill_attention(this.__wbg_ptr, end, sparse, alpha);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
      * @param {boolean} reference
      * @returns {Promise<void>}
      */
     set_reference(reference) {
         const ret = wasm.engine_set_reference(this.__wbg_ptr, reference);
         return ret;
+    }
+    /**
+     * @param {boolean} force
+     */
+    set_tiled_attention(force) {
+        wasm.engine_set_tiled_attention(this.__wbg_ptr, force);
     }
     /**
      * @param {boolean} unroll
@@ -205,6 +254,31 @@ export class Engine {
     }
 }
 if (Symbol.dispose) Engine.prototype[Symbol.dispose] = Engine.prototype.free;
+
+/**
+ * @param {string} request
+ * @returns {string}
+ */
+export function ui_core(request) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(request, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.ui_core(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
@@ -437,6 +511,10 @@ function __wbg_get_imports() {
             const ret = arg0.limits;
             return ret;
         },
+        __wbg_limits_d4ef440224084d65: function(arg0) {
+            const ret = arg0.limits;
+            return ret;
+        },
         __wbg_mapAsync_3546b4b874e14738: function(arg0, arg1, arg2, arg3) {
             const ret = arg0.mapAsync(arg1 >>> 0, arg2, arg3);
             return ret;
@@ -616,6 +694,10 @@ function __wbg_get_imports() {
         },
         __wbg_new_with_byte_offset_and_length_2f5d7fc2a828b74d: function(arg0, arg1, arg2) {
             const ret = new Uint8Array(arg0, arg1 >>> 0, arg2 >>> 0);
+            return ret;
+        },
+        __wbg_now_aa4ccb83129e9e55: function() {
+            const ret = Date.now();
             return ret;
         },
         __wbg_onSubmittedWorkDone_5c020973b11ab15f: function(arg0) {
@@ -840,18 +922,18 @@ function __wbg_get_imports() {
             arg0.writeBuffer(arg1, arg2, arg3, arg4, arg5);
         }, arguments); },
         __wbindgen_generic_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 292, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 309, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true_);
             return ret;
         },
         __wbindgen_generic_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 331, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 348, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_fddd185fc99cd29e___JsError___true_);
             return ret;
         },
         __wbindgen_generic_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 292, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__21);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 309, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__27);
             return ret;
         },
         __wbindgen_generic_0000000000000004: function(arg0) {
@@ -906,8 +988,8 @@ function wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bin
     wasm.wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true_(arg0, arg1, arg2);
 }
 
-function wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__21(arg0, arg1, arg2) {
-    wasm.wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__21(arg0, arg1, arg2);
+function wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__27(arg0, arg1, arg2) {
+    wasm.wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__27(arg0, arg1, arg2);
 }
 
 function wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_fddd185fc99cd29e___JsError___true_(arg0, arg1, arg2) {

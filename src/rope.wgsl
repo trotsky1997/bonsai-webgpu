@@ -19,7 +19,7 @@ fn main(@builtin(local_invocation_index) lane:u32,@builtin(workgroup_id) id:vec3
  for(var step=64u;step>0u;step/=2u){if lane<step{sums[lane]+=sums[lane+step];}workgroupBarrier();}
  values[lane]=(a*inverseSqrt(sums[0]/128.0+0.000001))*weight;workgroupBarrier();
  let d=lane%64u;let angle=f32(pos)*frequencies[d];
- let cs=cos(angle)*1.138629436111989;let sn=sin(angle)*1.138629436111989;
+ let cs=cos(angle)*YARN_ATTN;let sn=sin(angle)*YARN_ATTN;
  var rotated=0.0;
  if lane<64u {rotated=values[d]*cs-values[d+64u]*sn;}
  else {rotated=values[d]*sn+values[d+64u]*cs;}
