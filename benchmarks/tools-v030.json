@@ -1,0 +1,135 @@
+{
+  "ordinary": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "message": {
+          "content": "Hello! I'm here to help.",
+          "role": "assistant"
+        }
+      }
+    ]
+  },
+  "results": [
+    {
+      "actual_tool_result": {
+        "result": "2026-10-10T18:21:46+08:00",
+        "timezone": "Asia/Shanghai"
+      },
+      "first": {
+        "choices": [
+          {
+            "finish_reason": "tool_calls",
+            "message": {
+              "content": null,
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{}",
+                    "name": "get_datetime"
+                  },
+                  "id": "call_df3ff80a-0846-460d-9537-8f8fa01f8ddb",
+                  "type": "function"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "question": "今天是几号？",
+      "second": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "message": {
+              "content": "今天是10月10日，具体时间是18:21:46（UTC+8）。该时间区是亚洲大阪。",
+              "role": "assistant"
+            }
+          }
+        ]
+      },
+      "stream": true
+    },
+    {
+      "actual_tool_result": {
+        "result": "2026-10-10T18:21:46+08:00",
+        "timezone": "Asia/Shanghai"
+      },
+      "first": {
+        "choices": [
+          {
+            "finish_reason": "tool_calls",
+            "index": 0,
+            "message": {
+              "content": null,
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{}",
+                    "name": "get_datetime"
+                  },
+                  "id": "call_0dbf7be9-4c02-40d0-952c-b46363fd7f80",
+                  "type": "function"
+                }
+              ]
+            }
+          }
+        ],
+        "created": 1791627706,
+        "id": "chatcmpl-d8476360-7e89-4ab6-b370-d7e3d00084bc",
+        "model": "Bonsai-1.7B-W1A4-WebGPU",
+        "object": "chat.completion",
+        "timings": {
+          "cache_n": 138,
+          "predicted_ms": 72.22499999403954,
+          "predicted_n": 15,
+          "predicted_per_second": 193.8386985275925,
+          "prompt_ms": 18.46500000357628,
+          "prompt_n": 155,
+          "prompt_per_second": 920.6607092719988,
+          "ttft_ms": 90.67500001192091
+        },
+        "usage": {
+          "completion_tokens": 15,
+          "prompt_tokens": 155,
+          "total_tokens": 170
+        }
+      },
+      "question": "What is the current date and time?",
+      "second": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "content": "The current date and time is **2026-10-10T18:21:46+08:00**. The timezone is **Asia/Shanghai**.",
+              "role": "assistant"
+            }
+          }
+        ],
+        "created": 1791627706,
+        "id": "chatcmpl-23ccc399-f5c0-4443-a70f-c842e1b0b4b2",
+        "model": "Bonsai-1.7B-W1A4-WebGPU",
+        "object": "chat.completion",
+        "timings": {
+          "cache_n": 151,
+          "predicted_ms": 236.13999998569489,
+          "predicted_n": 43,
+          "predicted_per_second": 177.86059118550148,
+          "prompt_ms": 63.35000002384186,
+          "prompt_n": 218,
+          "prompt_per_second": 1057.6164163344035,
+          "ttft_ms": 63.38000002503395
+        },
+        "usage": {
+          "completion_tokens": 43,
+          "prompt_tokens": 218,
+          "total_tokens": 261
+        }
+      },
+      "stream": false
+    }
+  ]
+}

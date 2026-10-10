@@ -1,5 +1,8 @@
-import init, {Engine} from './pkg/bonsai_webgpu.js';
-let cacheName,forceNetwork=false;
+import init, {Engine} from './pkg/bonsai_webgpu.js?v=0.3.0';
+import {renderPrompt,toolsFor,ToolCallParser} from './chat-template.mjs?v=0.3.0';
+export {renderPrompt} from './chat-template.mjs?v=0.3.0';
+const manifestSha='13bbc348fe1832a85471abb8cc7794fa99cd6e94492f5018f1002b6ae9eb63a6';
+let cacheName,forceNetwork=false,prefetchDepth;
 let engine, ready, busy=false, cancelled=false, cached=[], loadInfo;
 const emit=value=>postMessage(value);
 let loadStats=[],cachePromise;
@@ -19,42 +22,28 @@ async function asset(path,expected) {
  if(!cached)await cache.put(url,new Response(bytes,{headers:{'Content-Type':'application/octet-stream'}}));
  loadStats.push({path,cached,cache_ms:matched-started,read_ms:read-matched,verify_cache_ms:performance.now()-read});return bytes;
 }
-async function load(context=2048,batch=8) {
+async function load(context=2048,batch=8,fast=true) {
  const started=performance.now();emit({type:'loading',message:'正在初始化 WebGPU…',percent:0});
  if(!navigator.gpu)throw Error('当前浏览器没有 WebGPU；请使用支持 WebGPU 的新版 Chrome、Edge 或 Safari。');
- const wasmPromise=init();
- const manifestPromise=fetch(new URL('../model/manifest.json',import.meta.url),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('模型清单下载失败');return r.json();});
- const manifest=await manifestPromise;
+ const wasmPromise=init({module_or_path:new URL('./pkg/bonsai_webgpu_bg.wasm?v=0.3.0',import.meta.url)});
+ const manifest=JSON.parse(new TextDecoder().decode(await asset('manifest.json',manifestSha)));
  const tk=manifest.tokenizer??{name:'tokenizer.json'};
  const tokenizerPromise=asset(tk.name,tk.sha256);
- // Three bounded uploads in flight hide cache I/O behind tokenizer and GPU setup.
+ const depth=prefetchDepth??(loadStats[0].cached?3:6);
+ // Bounded uploads in flight hide cache I/O behind tokenizer and GPU setup.
  const prefetched=new Map();const prefetch=i=>{if(i<manifest.files.length&&!prefetched.has(i)){const f=manifest.files[i];prefetched.set(i,asset(f.name,f.sha256));}};
- for(let i=0;i<3;i++)prefetch(i);
+ for(let i=0;i<depth;i++)prefetch(i);
  await wasmPromise;const wasm=performance.now();const tokenizer=await tokenizerPromise;const tok=performance.now();
- engine=await Engine.create(tokenizer,context,batch);const created=performance.now();let upload=0;
+ engine=await Engine.create(tokenizer,context,batch);await engine.set_unroll_projection(fast);const created=performance.now();let upload=0;
  let loaded=0,total=manifest.files.reduce((s,f)=>s+f.bytes,0);
  for(let i=0;i<manifest.files.length;i++){
-  const file=manifest.files[i];const bytes=await prefetched.get(i);prefetched.delete(i);prefetch(i+3);
+  const file=manifest.files[i];const bytes=await prefetched.get(i);prefetched.delete(i);prefetch(i+depth);
   const t=performance.now();engine.load_blob(bytes,i-1);upload+=performance.now()-t;loaded+=file.bytes;
   emit({type:'loading',message:`正在加载模型 ${Math.round(loaded/total*100)}%`,percent:loaded/total*100});
  }
- loadInfo={runtime_version:'0.2.0',backend:'browser-webgpu',kernel:'signmag-exact-centered-g32',weight_bits:1,activation_bits:4,context,batch,adapter:engine.adapter(),load_ms:performance.now()-started,load_stages:{wasm_ms:wasm-started,tokenizer_ms:tok-wasm,engine_ms:created-tok,upload_ms:upload,files:loadStats},memory:engine.memory(),checkpoint_sha256:manifest.checkpoint_sha256};
+ await engine.finish_load();
+ loadInfo={runtime_version:'0.3.0',backend:'browser-webgpu',kernel:fast?'signmag-exact-unrolled-g32':'signmag-exact-centered-g32',weight_bits:1,activation_bits:4,context,batch,adapter:engine.adapter(),load_ms:performance.now()-started,load_stages:{wasm_ms:wasm-started,tokenizer_ms:tok-wasm,engine_ms:created-tok,upload_ms:upload,files:loadStats},memory:engine.memory(),checkpoint_sha256:manifest.checkpoint_sha256};
  emit({type:'ready',...loadInfo});return loadInfo;
-}
-export function renderPrompt(body){
- if(!Array.isArray(body.messages)||!body.messages.length)throw Error('messages required');
- let prompt='';const lastUser=body.messages.findLastIndex(m=>m.role==='user');
- for(const [index,message] of body.messages.entries()){
-  const role=message.role==='developer'?'system':message.role;if(!['system','user','assistant'].includes(role)||message.tool_calls?.length)throw Error('只支持文本对话');
-  let content=Array.isArray(message.content)?message.content.map(p=>{if(p.type!=='text')throw Error('只支持文本消息');return p.text;}).join(''):message.content||'';
-  let reasoning=message.reasoning_content||'';
-  if(role==='assistant'&&content.includes('</think>')){if(!reasoning)reasoning=content.split('</think>')[0].split('<think>').at(-1).trim();content=content.split('</think>').at(-1).replace(/^\n+/,'');}
-  prompt+=`<|im_start|>${role}\n`;
-  if(role==='assistant'&&index>lastUser&&(index===body.messages.length-1||reasoning))prompt+=`<think>\n${reasoning.trim()}\n</think>\n\n`;
-  prompt+=content+'<|im_end|>\n';
- }
- if(body.continue_final_message){if(body.messages.at(-1).role!=='assistant')throw Error('Continuation needs assistant');return prompt.slice(0,-'<|im_end|>\n'.length);}
- return prompt+'<|im_start|>assistant\n<think>\n\n</think>\n\n';
 }
 function sample(candidates,body,rng=Math.random){
  if((body.temperature??0.5)<=0)return candidates[0][0];
@@ -80,6 +69,10 @@ async function generate(id,body){
   emit({type:'progress',id,prompt_tokens:ids.length,cached_tokens:prefix,processed_tokens:prefix});
   for(let i=prefix;i<ids.length;i+=loadInfo.batch){if(cancelled)break;const chunk=ids.slice(i,i+loadInfo.batch);candidates=await engine.forward(new Uint32Array(chunk),topk);cached.push(...chunk);emit({type:'progress',id,prompt_tokens:ids.length,cached_tokens:prefix,processed_tokens:i+chunk.length});}
   const prefill=performance.now()-started;const decodeStart=performance.now();let first=null,generated=[],sent='',finish='length';
+  const tools=toolsFor(body);
+  const sendText=text=>{if(text){if(first===null)first=performance.now()-started;emit({type:'delta',id,text});}};
+  const parser=tools.length?new ToolCallParser(tools,sendText):null;
+  const deliver=text=>parser?parser.push(text):sendText(text);
   const stops=typeof body.stop==='string'?[body.stop]:body.stop??[];let stopped=false;
   let random=Math.random;
   if(Number.isInteger(body.seed)&&body.seed>=0){let state=(body.seed>>>0)||1;random=()=>{state^=state<<13;state^=state>>>17;state^=state<<5;return(state>>>0)/4294967296;};}
@@ -92,12 +85,14 @@ async function generate(id,body){
    // Hold incomplete UTF-8 bytes and potential stop prefixes between tokens.
    let safe=decoded.endsWith('\ufffd')?decoded.slice(0,decoded.lastIndexOf('\ufffd')):decoded;
    if(!stopped&&stops.length){let hold=0;for(const stop of stops)for(let n=1;n<stop.length;n++)if(safe.endsWith(stop.slice(0,n)))hold=Math.max(hold,n);safe=safe.slice(0,safe.length-hold);}
-   if(safe.length>sent.length){const text=safe.slice(sent.length);sent=safe;if(first===null)first=performance.now()-started;emit({type:'delta',id,text,token});}
+   if(safe.length>sent.length){const text=safe.slice(sent.length);sent=safe;deliver(text);}
    if(stopped)break;
    if(step+1<max){candidates=await engine.forward(new Uint32Array([token]),topk);cached.push(token);}
   }
   if(cancelled)finish='stop';
-  if(!stopped){const decoded=engine.decode(new Uint32Array(generated));if(decoded.startsWith(sent)&&decoded.length>sent.length)emit({type:'delta',id,text:decoded.slice(sent.length)});}
+  if(!stopped){const decoded=engine.decode(new Uint32Array(generated));if(decoded.startsWith(sent)&&decoded.length>sent.length)deliver(decoded.slice(sent.length));}
+  const calls=parser?.finish(cancelled)??[];
+  if(calls.length){if(first===null)first=performance.now()-started;emit({type:'tool_calls',id,tool_calls:calls.map((call,index)=>({...call,index,id:'call_'+crypto.randomUUID()}))});finish='tool_calls';}
   emit({type:'done',id,finish_reason:finish,prompt_tokens:ids.length,cached_tokens:prefix,completion_tokens:generated.length,prefill_ms:prefill,decode_ms:performance.now()-decodeStart,ttft_ms:first,tokens:generated,memory:engine.memory()});
  }finally{busy=false;}
 }
@@ -117,7 +112,7 @@ async function diagnose(id,job){
 onmessage=async({data})=>{
  const {op,id}=data;
  try{
-  if(op==='init'){cacheName=data.cache_name;forceNetwork=!!data.force_network;ready=load(data.context??2048,data.batch??8);await ready;}
+  if(op==='init'){cacheName=data.cache_name;forceNetwork=!!data.force_network;prefetchDepth=data.prefetch;if(prefetchDepth!==undefined&&(!Number.isInteger(prefetchDepth)||prefetchDepth<1||prefetchDepth>8))throw Error("prefetch 1..8");ready=load(data.context??2048,data.batch??8,(data.fast??true));await ready;}
   else if(op==='cancel'){cancelled=true;}
   else if(op==='generate'){await generate(id,data.body);}
   else if(op==='reset'){await ready;if(busy)throw Error('busy');engine.reset();cached=[];emit({type:'reset',id});}
@@ -128,9 +123,9 @@ onmessage=async({data})=>{
   else if(op==='kernel-check'){await ready;if(busy)throw Error('busy');emit({type:'checked',id,result:await engine.kernel_check()});}
   else if(op==='tokenize-check'){await ready;if(busy)throw Error('busy');emit({type:'checked',id,result:data.texts.map(text=>Array.from(engine.encode(text)))});}
   else if(op==='equivalence-check'){
-   await ready;if(busy)throw Error('busy');const ids=Array.from(engine.encode(data.text)).slice(0,data.limit??40);engine.reset();engine.set_reference(true);const expected=[];
+   await ready;if(busy)throw Error('busy');const ids=Array.from(engine.encode(data.text)).slice(0,data.limit??40);engine.reset();await engine.set_reference(true);const expected=[];
    for(const token of ids)expected.push(await engine.logits(token));
-   engine.reset();engine.set_reference(false);let max=0,count=0;
+   engine.reset();await engine.set_reference(false);let max=0,count=0;
    for(let j=0;j<ids.length;j++){const actual=await engine.logits(ids[j]);for(let i=0;i<actual.length;i++){max=Math.max(max,Math.abs(actual[i]-expected[j][i]));if(actual[i]!==expected[j][i])count++;}}
    engine.reset();cached=[];emit({type:'checked',id,result:{tokens:ids.length,logits:ids.length*151669,max_abs_error:max,unequal_logits:count}});
   }

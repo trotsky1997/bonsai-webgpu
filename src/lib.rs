@@ -120,6 +120,7 @@ pub struct Engine {
     adapter_info: String,
     fuse_qkv: bool,
     optimized: bool,
+    unroll_projection: bool,
 }
 
 impl Engine {
@@ -150,14 +151,6 @@ impl Engine {
         // The WebGPU mapping already lives in JavaScript. Copy directly into
         // that view instead of round-tripping a zero-filled mapping via WASM.
         {let view=buffer.slice(..).get_mapped_range();view.as_uint8array().set(bytes,0);}
-        buffer.unmap();buffer
-    }
-    fn data(&self,label:&str,bytes:&[u8])->wgpu::Buffer {
-        let buffer=self.device.create_buffer(&wgpu::BufferDescriptor{label:Some(label),size:(bytes.len() as u64+3)&!3,usage:wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_DST|wgpu::BufferUsages::COPY_SRC,mapped_at_creation:true});
-        {let mapped=buffer.slice(..).get_mapped_range();
-         // All Rust allocations precede this temporary WASM view.
-         let data=unsafe{js_sys::Uint8Array::view(bytes)};
-         mapped.as_uint8array().set(&data,0);}
         buffer.unmap();buffer
     }
     fn uniform(&self, data: &[u32]) -> wgpu::Buffer {
@@ -201,7 +194,7 @@ impl Engine {
     fn project(&self, m: &Matrix, out: &wgpu::Buffer, b: u32, tail: bool) -> Dispatch {
         let count = if tail { 1 } else { b };
         self.dispatch(
-            "project",
+            if self.unroll_projection && self.optimized {"project"}else{"project_exact"},
             &[&m.weights, &m.scales, &self.buffers["packed"], out],
             [(m.n + 127) / 128, count, 1],
             [
@@ -211,6 +204,43 @@ impl Engine {
                 if tail { (b - 1) * (m.k / 32) } else { 0 },
             ],
         )
+    }
+    fn compile_kernel(&mut self,name:&str,source:&str) {
+            let source = source.replace("CONTEXT_LENGTH", &self.capacity.to_string());
+            let module = self
+                .device
+                .create_shader_module(wgpu::ShaderModuleDescriptor {
+                    label: Some(name),
+                    source: wgpu::ShaderSource::Wgsl(source.into()),
+                });
+            let pipeline =
+                self
+                    .device
+                    .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                        label: Some(name),
+                        layout: None,
+                        module: &module,
+                        entry_point: Some("main"),
+                        compilation_options: Default::default(),
+                        cache: None,
+                    });
+            self.kernels.insert(name.into(), Kernel { pipeline });
+    }
+    async fn prepare_reference(&mut self)->Result<()> {
+        self.device.push_error_scope(wgpu::ErrorFilter::Validation);
+        for (name,source) in [
+            ("project_exact",include_str!("project_exact.wgsl")),
+            ("qkv_exact",include_str!("qkv_exact.wgsl")),
+            ("gateup_exact",include_str!("gateup_exact.wgsl")),
+            ("attention",include_str!("attention.wgsl")),
+            ("add",include_str!("add.wgsl")),
+            ("silu",include_str!("silu.wgsl")),
+        ] {
+            if name=="qkv_exact" && !self.fuse_qkv {continue;}
+            if !self.kernels.contains_key(name) {self.compile_kernel(name,source);}
+        }
+        if let Some(e)=self.device.pop_error_scope().await {return Err(err(format!("reference pipelines: {e}")));}
+        Ok(())
     }
     fn graph(&self,b:u32)->Vec<Dispatch>{self.graph_mode(b,self.optimized)}
     fn graph_mode(&self, b: u32, optimized:bool) -> Vec<Dispatch> {
@@ -257,7 +287,7 @@ impl Engine {
             if optimized && index>0 {v.push(self.dispatch("norm_add",&[&s["x"],&n["input_norm"],&s["z"],&s["o"]],[1,b,1],[2048,b,0,0]));}else{v.push(norm(&n["input_norm"]));}
             v.push(pack(&s["z"], 2048));
             if optimized && self.fuse_qkv {
-                v.push(self.dispatch("qkv",&[&m["q"].weights,&m["q"].scales,&s["q"],&m["k"].weights,&m["k"].scales,&s["k"],&m["v"].weights,&m["v"].scales,&s["v"],&s["packed"]],[32,b,1],[0,64,b,0]));
+                v.push(self.dispatch(if self.unroll_projection {"qkv"}else{"qkv_exact"},&[&m["q"].weights,&m["q"].scales,&s["q"],&m["k"].weights,&m["k"].scales,&s["k"],&m["v"].weights,&m["v"].scales,&s["v"],&s["packed"]],[32,b,1],[0,64,b,0]));
             } else {for name in ["q","k","v"]{v.push(self.project(&m[name],&s[name],b,false));}}
             v.push(self.dispatch(
                 "rope",
@@ -289,7 +319,7 @@ impl Engine {
             else {v.push(add());v.push(norm(&n["post_norm"]));}
             v.push(pack(&s["z"], 2048));
             if optimized {
-                v.push(self.dispatch("gateup",&[&m["gate"].weights,&m["gate"].scales,&s["gate"],&m["up"].weights,&m["up"].scales,&s["up"],&s["packed"]],[96,b,1],[0,64,b,0]));
+                v.push(self.dispatch(if self.unroll_projection {"gateup"}else{"gateup_exact"},&[&m["gate"].weights,&m["gate"].scales,&s["gate"],&m["up"].weights,&m["up"].scales,&s["up"],&s["packed"]],[96,b,1],[0,64,b,0]));
                 v.push(self.dispatch("silu_pack",&[&s["gate"],&s["up"],&s["packed"]],[192,b,1],[192,b,7,0]));
             } else {
             for name in ["gate", "up"] {
@@ -453,10 +483,16 @@ impl Engine {
             adapter_info,
             fuse_qkv,
             optimized:true,
+            unroll_projection: true,
         };
+        engine.device.push_error_scope(wgpu::ErrorFilter::Validation);
         for (name, source) in [
             ("embed", include_str!("embed.wgsl")),
+            ("expand_scales",include_str!("expand_scales.wgsl")),
             ("project", include_str!("project.wgsl")),
+            ("project_exact",include_str!("project_exact.wgsl")),
+            ("qkv_exact",include_str!("qkv_exact.wgsl")),
+            ("gateup_exact",include_str!("gateup_exact.wgsl")),
             ("norm", include_str!("norm.wgsl")),
             ("pack", include_str!("pack.wgsl")),
             ("rope", include_str!("rope.wgsl")),
@@ -472,33 +508,11 @@ impl Engine {
             ("attention_pack",include_str!("attention_pack.wgsl")),
             ("candidates_cached",include_str!("candidates_cached.wgsl")),
         ] {
-            if name=="qkv" && !fuse_qkv { continue; }
-            let source = source.replace("CONTEXT_LENGTH", &capacity.to_string());
-            engine
-                .device
-                .push_error_scope(wgpu::ErrorFilter::Validation);
-            let module = engine
-                .device
-                .create_shader_module(wgpu::ShaderModuleDescriptor {
-                    label: Some(name),
-                    source: wgpu::ShaderSource::Wgsl(source.into()),
-                });
-            let pipeline =
-                engine
-                    .device
-                    .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                        label: Some(name),
-                        layout: None,
-                        module: &module,
-                        entry_point: Some("main"),
-                        compilation_options: Default::default(),
-                        cache: None,
-                    });
-            if let Some(e) = engine.device.pop_error_scope().await {
-                return Err(err(format!("{name}: {e}")));
-            }
-            engine.kernels.insert(name.into(), Kernel { pipeline });
+            if (name=="qkv" || name=="qkv_exact") && !fuse_qkv { continue; }
+            if matches!(name,"project_exact"|"qkv_exact"|"gateup_exact"|"attention"|"add"|"silu") {continue;}
+            engine.compile_kernel(name,source);
         }
+        if let Some(e)=engine.device.pop_error_scope().await { return Err(err(format!("pipeline initialization: {e}"))); }
         for (name, len) in [
             ("x", 2048 * batch),
             ("z", 2048 * batch),
@@ -553,6 +567,7 @@ impl Engine {
         };
         let mut matrices = HashMap::new();
         let mut vectors = HashMap::new();
+        let mut expanded=Vec::new();
         for m in blob.matrices {
             if m.k % 128 != 0
                 || get(m.w)?.length() as usize != m.n as usize * m.k as usize / 8
@@ -560,21 +575,25 @@ impl Engine {
             {
                 return Err(err("invalid packed matrix shape"));
             }
-            let scales: Vec<f32> = get(m.s)?.to_vec()
-                .chunks_exact(2)
-                .map(|x| half::f16::from_bits(u16::from_le_bytes([x[0], x[1]])).to_f32())
-                .collect();
-            self.weights_bytes += (get(m.w)?.length() as usize + scales.len() * 4) as u64;
+            let source=self.data_js("packed FP16 scales",&get(m.s)?);
+            let scales=self.buffer("FP32 scales",get(m.s)?.length() as u64*2,wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_SRC);
+            let count=get(m.s)?.length()/4;
+            let expansion=self.dispatch("expand_scales",&[&source,&scales],[(count+255)/256,1,1],[count,0,0,0]);
+            expanded.push((source,expansion));
+            self.weights_bytes += (get(m.w)?.length() + get(m.s)?.length()*2) as u64;
             matrices.insert(
                 m.name,
                 Matrix {
                     weights: self.data_js("W1", &get(m.w)?),
-                    scales: self.data("scales", bytemuck::cast_slice(&scales)),
+                    scales,
                     n: m.n,
                     k: m.k,
                 },
             );
         }
+        let mut encoder=self.device.create_command_encoder(&Default::default());
+        {let mut pass=encoder.begin_compute_pass(&Default::default());for (_,d) in &expanded {pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],1,1);}}
+        self.queue.submit(Some(encoder.finish()));
         for n in blob.vectors {
             let data = get(n.data)?;
             self.weights_bytes += data.length() as u64;
@@ -605,6 +624,12 @@ impl Engine {
         self.graphs.clear();
         Ok(())
     }
+    pub async fn finish_load(&self)->Result<()> {
+        if self.layers.len()!=28 || !self.matrices.contains_key("embed") {return Err(err("model is not loaded"));}
+        let (tx,rx)=futures_channel::oneshot::channel();
+        self.queue.on_submitted_work_done(move || {let _=tx.send(());});
+        rx.await.map_err(err)?;Ok(())
+    }
     pub fn encode(&self, text: &str) -> Result<Vec<u32>> {
         Ok(self
             .tokenizer
@@ -616,7 +641,8 @@ impl Engine {
     pub fn decode(&self, tokens: Vec<u32>) -> Result<String> {
         self.tokenizer.decode(&tokens, true).map_err(err)
     }
-    pub fn set_reference(&mut self, reference:bool){self.optimized=!reference;self.graphs.clear();}
+    pub async fn set_reference(&mut self, reference:bool)->Result<()>{if reference {self.prepare_reference().await?;}self.optimized=!reference;self.graphs.clear();Ok(())}
+    pub async fn set_unroll_projection(&mut self, unroll:bool)->Result<()>{if !unroll {self.prepare_reference().await?;}self.unroll_projection=unroll;self.graphs.clear();Ok(())}
     pub fn reset(&mut self) {
         self.pos = 0;
     }
@@ -846,6 +872,7 @@ impl Engine {
         serde_json::json!({"dispatches":graph.len(),"totals_us":totals,"rows":rows}).serialize(&serde_wasm_bindgen::Serializer::json_compatible()).map_err(err)
     }
     pub async fn trace(&mut self, token: u32) -> Result<JsValue> {
+        self.prepare_reference().await?;
         if self.layers.len() != 28 {
             return Err(err("model not loaded"));
         }

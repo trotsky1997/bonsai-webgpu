@@ -1,7 +1,10 @@
 [package]
 name = "bonsai-webgpu"
-version = "0.1.0"
+version = "0.3.0"
 edition = "2021"
+description = "Dedicated Bonsai W1A4 inference in the browser"
+license = "MIT"
+repository = "https://github.com/trotsky1997/bonsai-webgpu"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -12,60 +12,93 @@
 fn project_q(row:u32,t:u32) {
  var total=0.0;
  for(var wg=0u;wg<p.y/4u;wg++) {
-  let s=q_s[wg*2048u+row];
-  for(var j=0u;j<4u;j++) {
-   let g=wg*4u+j;let a=((t*p.y)+p.w+g)*8u;
-   let r=q_w[g*2048u+row]^packed[a+3u];
-   let c=i32(countOneBits(r&packed[a]))+2*i32(countOneBits(r&packed[a+1u]))+4*i32(countOneBits(r&packed[a+2u]));
-   let dot=2*c-bitcast<i32>(packed[a+7u]);
-   // FP16 scale times this small integer is exactly representable in FP32.
-   // Thus centered affine multiplication preserves every original result.
-   let weighted=(s*0.5)*f32(dot);
-   // Explicit fma(..., 0) rounds the product before the addition; avoids
-   // implicit contraction across the activation scale and total accumulator.
-   let scaled=fma(weighted,bitcast<f32>(packed[a+4u]),0.0);
-   total=fma(total,1.0,scaled);
-  }
+  let s=q_s[wg*2048u+row]*0.5;
+  let g=wg*4u;
+  let a0=((t*p.y)+p.w+g+0u)*8u;
+  let r0=q_w[(g+0u)*2048u+row]^packed[a0+3u];
+  let c0=i32(countOneBits(r0&packed[a0]))+2*i32(countOneBits(r0&packed[a0+1u]))+4*i32(countOneBits(r0&packed[a0+2u]));
+  let d0=f32(2*c0-bitcast<i32>(packed[a0+7u]));
+  let a1=((t*p.y)+p.w+g+1u)*8u;
+  let r1=q_w[(g+1u)*2048u+row]^packed[a1+3u];
+  let c1=i32(countOneBits(r1&packed[a1]))+2*i32(countOneBits(r1&packed[a1+1u]))+4*i32(countOneBits(r1&packed[a1+2u]));
+  let d1=f32(2*c1-bitcast<i32>(packed[a1+7u]));
+  let a2=((t*p.y)+p.w+g+2u)*8u;
+  let r2=q_w[(g+2u)*2048u+row]^packed[a2+3u];
+  let c2=i32(countOneBits(r2&packed[a2]))+2*i32(countOneBits(r2&packed[a2+1u]))+4*i32(countOneBits(r2&packed[a2+2u]));
+  let d2=f32(2*c2-bitcast<i32>(packed[a2+7u]));
+  let a3=((t*p.y)+p.w+g+3u)*8u;
+  let r3=q_w[(g+3u)*2048u+row]^packed[a3+3u];
+  let c3=i32(countOneBits(r3&packed[a3]))+2*i32(countOneBits(r3&packed[a3+1u]))+4*i32(countOneBits(r3&packed[a3+2u]));
+  let d3=f32(2*c3-bitcast<i32>(packed[a3+7u]));
+  let weighted=vec4<f32>(s)*vec4<f32>(d0,d1,d2,d3);
+  let scales=vec4<f32>(bitcast<f32>(packed[a0+4u]),bitcast<f32>(packed[a1+4u]),bitcast<f32>(packed[a2+4u]),bitcast<f32>(packed[a3+4u]));
+  let scaled=fma(weighted,scales,vec4<f32>(0.0));
+  total=fma(total,1.0,scaled.x);
+  total=fma(total,1.0,scaled.y);
+  total=fma(total,1.0,scaled.z);
+  total=fma(total,1.0,scaled.w);
  }
  q_out[t*2048u+row]=total;
 }
 fn project_k(row:u32,t:u32) {
  var total=0.0;
  for(var wg=0u;wg<p.y/4u;wg++) {
-  let s=k_s[wg*1024u+row];
-  for(var j=0u;j<4u;j++) {
-   let g=wg*4u+j;let a=((t*p.y)+p.w+g)*8u;
-   let r=k_w[g*1024u+row]^packed[a+3u];
-   let c=i32(countOneBits(r&packed[a]))+2*i32(countOneBits(r&packed[a+1u]))+4*i32(countOneBits(r&packed[a+2u]));
-   let dot=2*c-bitcast<i32>(packed[a+7u]);
-   // FP16 scale times this small integer is exactly representable in FP32.
-   // Thus centered affine multiplication preserves every original result.
-   let weighted=(s*0.5)*f32(dot);
-   // Explicit fma(..., 0) rounds the product before the addition; avoids
-   // implicit contraction across the activation scale and total accumulator.
-   let scaled=fma(weighted,bitcast<f32>(packed[a+4u]),0.0);
-   total=fma(total,1.0,scaled);
-  }
+  let s=k_s[wg*1024u+row]*0.5;
+  let g=wg*4u;
+  let a0=((t*p.y)+p.w+g+0u)*8u;
+  let r0=k_w[(g+0u)*1024u+row]^packed[a0+3u];
+  let c0=i32(countOneBits(r0&packed[a0]))+2*i32(countOneBits(r0&packed[a0+1u]))+4*i32(countOneBits(r0&packed[a0+2u]));
+  let d0=f32(2*c0-bitcast<i32>(packed[a0+7u]));
+  let a1=((t*p.y)+p.w+g+1u)*8u;
+  let r1=k_w[(g+1u)*1024u+row]^packed[a1+3u];
+  let c1=i32(countOneBits(r1&packed[a1]))+2*i32(countOneBits(r1&packed[a1+1u]))+4*i32(countOneBits(r1&packed[a1+2u]));
+  let d1=f32(2*c1-bitcast<i32>(packed[a1+7u]));
+  let a2=((t*p.y)+p.w+g+2u)*8u;
+  let r2=k_w[(g+2u)*1024u+row]^packed[a2+3u];
+  let c2=i32(countOneBits(r2&packed[a2]))+2*i32(countOneBits(r2&packed[a2+1u]))+4*i32(countOneBits(r2&packed[a2+2u]));
+  let d2=f32(2*c2-bitcast<i32>(packed[a2+7u]));
+  let a3=((t*p.y)+p.w+g+3u)*8u;
+  let r3=k_w[(g+3u)*1024u+row]^packed[a3+3u];
+  let c3=i32(countOneBits(r3&packed[a3]))+2*i32(countOneBits(r3&packed[a3+1u]))+4*i32(countOneBits(r3&packed[a3+2u]));
+  let d3=f32(2*c3-bitcast<i32>(packed[a3+7u]));
+  let weighted=vec4<f32>(s)*vec4<f32>(d0,d1,d2,d3);
+  let scales=vec4<f32>(bitcast<f32>(packed[a0+4u]),bitcast<f32>(packed[a1+4u]),bitcast<f32>(packed[a2+4u]),bitcast<f32>(packed[a3+4u]));
+  let scaled=fma(weighted,scales,vec4<f32>(0.0));
+  total=fma(total,1.0,scaled.x);
+  total=fma(total,1.0,scaled.y);
+  total=fma(total,1.0,scaled.z);
+  total=fma(total,1.0,scaled.w);
  }
  k_out[t*1024u+row]=total;
 }
 fn project_v(row:u32,t:u32) {
  var total=0.0;
  for(var wg=0u;wg<p.y/4u;wg++) {
-  let s=v_s[wg*1024u+row];
-  for(var j=0u;j<4u;j++) {
-   let g=wg*4u+j;let a=((t*p.y)+p.w+g)*8u;
-   let r=v_w[g*1024u+row]^packed[a+3u];
-   let c=i32(countOneBits(r&packed[a]))+2*i32(countOneBits(r&packed[a+1u]))+4*i32(countOneBits(r&packed[a+2u]));
-   let dot=2*c-bitcast<i32>(packed[a+7u]);
-   // FP16 scale times this small integer is exactly representable in FP32.
-   // Thus centered affine multiplication preserves every original result.
-   let weighted=(s*0.5)*f32(dot);
-   // Explicit fma(..., 0) rounds the product before the addition; avoids
-   // implicit contraction across the activation scale and total accumulator.
-   let scaled=fma(weighted,bitcast<f32>(packed[a+4u]),0.0);
-   total=fma(total,1.0,scaled);
-  }
+  let s=v_s[wg*1024u+row]*0.5;
+  let g=wg*4u;
+  let a0=((t*p.y)+p.w+g+0u)*8u;
+  let r0=v_w[(g+0u)*1024u+row]^packed[a0+3u];
+  let c0=i32(countOneBits(r0&packed[a0]))+2*i32(countOneBits(r0&packed[a0+1u]))+4*i32(countOneBits(r0&packed[a0+2u]));
+  let d0=f32(2*c0-bitcast<i32>(packed[a0+7u]));
+  let a1=((t*p.y)+p.w+g+1u)*8u;
+  let r1=v_w[(g+1u)*1024u+row]^packed[a1+3u];
+  let c1=i32(countOneBits(r1&packed[a1]))+2*i32(countOneBits(r1&packed[a1+1u]))+4*i32(countOneBits(r1&packed[a1+2u]));
+  let d1=f32(2*c1-bitcast<i32>(packed[a1+7u]));
+  let a2=((t*p.y)+p.w+g+2u)*8u;
+  let r2=v_w[(g+2u)*1024u+row]^packed[a2+3u];
+  let c2=i32(countOneBits(r2&packed[a2]))+2*i32(countOneBits(r2&packed[a2+1u]))+4*i32(countOneBits(r2&packed[a2+2u]));
+  let d2=f32(2*c2-bitcast<i32>(packed[a2+7u]));
+  let a3=((t*p.y)+p.w+g+3u)*8u;
+  let r3=v_w[(g+3u)*1024u+row]^packed[a3+3u];
+  let c3=i32(countOneBits(r3&packed[a3]))+2*i32(countOneBits(r3&packed[a3+1u]))+4*i32(countOneBits(r3&packed[a3+2u]));
+  let d3=f32(2*c3-bitcast<i32>(packed[a3+7u]));
+  let weighted=vec4<f32>(s)*vec4<f32>(d0,d1,d2,d3);
+  let scales=vec4<f32>(bitcast<f32>(packed[a0+4u]),bitcast<f32>(packed[a1+4u]),bitcast<f32>(packed[a2+4u]),bitcast<f32>(packed[a3+4u]));
+  let scaled=fma(weighted,scales,vec4<f32>(0.0));
+  total=fma(total,1.0,scaled.x);
+  total=fma(total,1.0,scaled.y);
+  total=fma(total,1.0,scaled.z);
+  total=fma(total,1.0,scaled.w);
  }
  v_out[t*1024u+row]=total;
 }

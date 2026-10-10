@@ -1,5 +1,6 @@
 const variant=new URLSearchParams(location.search).get('variant')||'optimized';
-const worker=new Worker(variant==='baseline'?'/benchmarks/baseline/worker.mjs':'/web/worker.mjs',{type:'module'}),listeners=new Map();let serial=1000,info;
+const workerPath=variant==='baseline'?'/benchmarks/baseline/worker.mjs':variant==='v020'?'/benchmarks/v020/worker.mjs':'/web/worker.mjs';
+const worker=new Worker(workerPath,{type:'module'}),listeners=new Map();let serial=1000,info;
 const status=document.querySelector('#status'),log=document.querySelector('#log');
 const append=s=>{log.textContent=(log.textContent+'\n'+s).slice(-12000);};
 let resolveReady,rejectReady;const ready=new Promise((r,j)=>{resolveReady=r;rejectReady=j;});
@@ -10,13 +11,14 @@ worker.onmessage=({data})=>{
  else listeners.get(data.id)?.(data);
 };
 worker.onerror=e=>{status.textContent=e.message;rejectReady(e);};
-worker.postMessage({op:'init',context:2048,batch:8});
+worker.postMessage({op:'init',context:2048,batch:8,fast:variant!=='reference'});
 function command(op,args={}){
- const id=++serial;let content='',first=null;const start=performance.now();
+ const id=++serial;let content='',first=null,tool_calls=[];const start=performance.now();
  return new Promise((resolve,reject)=>{listeners.set(id,event=>{
   if(event.type==='error'){listeners.delete(id);reject(Error(event.message));}
+  if(event.type==='tool_calls')tool_calls=event.tool_calls;
   if(event.type==='delta'){content+=event.text;if(first===null)first=performance.now()-start;}
-  if(['done','reset','diagnosed','info','traced','checked'].includes(event.type)){listeners.delete(id);resolve({...event,content,wall_ttft_ms:first,wall_ms:performance.now()-start});}
+  if(['done','reset','diagnosed','info','traced','checked'].includes(event.type)){listeners.delete(id);resolve({...event,content,tool_calls,wall_ttft_ms:first,wall_ms:performance.now()-start});}
  });worker.postMessage({op,id,...args});});
 }
 async function run(job){
@@ -25,9 +27,9 @@ async function run(job){
  if(job.op==='load-check'){
   const rows=[];
   for(let round=0;round<(job.rounds??5);round++){
-   const probe=new Worker(variant==='baseline'?'/benchmarks/baseline/worker.mjs':'/web/worker.mjs',{type:'module'});
+   const probe=new Worker(workerPath,{type:'module'});
    const cache_name=job.cold?'bonsai-load-test-'+job.job_id+'-'+round:undefined;
-   try{rows.push(await new Promise((resolve,reject)=>{probe.onmessage=({data})=>{if(data.type==='ready')resolve(data);else if(data.type==='error')reject(Error(data.message));};probe.onerror=reject;probe.postMessage({op:'init',context:2048,batch:8,cache_name,force_network:!!job.cold});}));}
+   try{rows.push(await new Promise((resolve,reject)=>{probe.onmessage=({data})=>{if(data.type==='ready')resolve(data);else if(data.type==='error')reject(Error(data.message));};probe.onerror=reject;probe.postMessage({op:'init',context:2048,batch:8,cache_name,force_network:!!job.cold,prefetch:job.prefetch});}));}
    finally{probe.terminate();if(cache_name)await caches.delete(cache_name);}
   }
   result={result:rows};

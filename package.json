@@ -1,1 +1,1 @@
-{"name":"bonsai-webgpu","version":"0.2.0","private":true,"type":"module","scripts":{"build:site":"node build-site.mjs","start":"node run.mjs","stop":"node stop.mjs"}}
+{"name":"bonsai-webgpu","version":"0.3.0","private":true,"type":"module","scripts":{"build:site":"node build-site.mjs","start":"node run.mjs","stop":"node stop.mjs"}}

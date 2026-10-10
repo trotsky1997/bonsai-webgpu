@@ -1,0 +1,52 @@
+{
+  "kernel": {
+    "cases": 40,
+    "linear_outputs": 81920,
+    "bit_errors": 0,
+    "scale_errors": 0,
+    "linear_errors": 0,
+    "max_abs_error": 0
+  },
+  "candidates": [
+    {
+      "top_k": 1,
+      "exact": true
+    },
+    {
+      "top_k": 20,
+      "exact": true
+    },
+    {
+      "top_k": 64,
+      "exact": true
+    }
+  ],
+  "fused_equivalence": {
+    "tokens": 40,
+    "logits": 6066760,
+    "max_abs_error": 0,
+    "unequal_logits": 0
+  },
+  "batch40": {
+    "tokens": 40,
+    "max_abs_error": 0,
+    "unequal_logits": 0
+  },
+  "batch320": {
+    "tokens": 320,
+    "max_abs_error": 0,
+    "unequal_logits": 0
+  },
+  "tokenizer": {
+    "cases": 18,
+    "exact": true
+  },
+  "tokenizer_edges": {
+    "cases": 34,
+    "exact": true
+  },
+  "scale_integer_oracle": {
+    "cases": 1000000,
+    "bit_errors": 0
+  }
+}

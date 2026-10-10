@@ -1,7 +1,7 @@
 // OpenAI-shaped streaming transport, entirely within this browser tab.
 const nativeFetch=window.fetch.bind(window);
 const appBase=new URL('../',import.meta.url);
-const worker=new Worker(new URL('web/worker.mjs',appBase),{type:'module'});
+const worker=new Worker(new URL('web/worker.mjs?v=0.3.0',appBase),{type:'module'});
 let resolveReady,rejectReady,info,serial=0;
 const ready=new Promise((resolve,reject)=>{resolveReady=resolve;rejectReady=reject;});
 const listeners=new Map();
@@ -18,7 +18,7 @@ worker.onmessage=({data})=>{
 worker.onerror=e=>{rejectReady(Error(e.message));overlay.querySelector('#bonsai-status').textContent=e.message;};
 worker.postMessage({op:'init'});
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
-function props(){return {role:'model',model_path:'Bonsai-1.7B-W1A4-WebGPU',total_slots:1,default_generation_settings:{id:0,n_ctx:2048,is_processing:false,prompt:'',params:{temperature:0.5,top_k:20,top_p:0.85,min_p:0,max_tokens:512,n_predict:512,repeat_penalty:1,repeat_last_n:64,presence_penalty:0,frequency_penalty:0,seed:-1,stop:[],samplers:['top_k','top_p','temperature'],reasoning_format:'none'}},modalities:{vision:false,audio:false,video:false},chat_template:'',bos_token:'',eos_token:'<|im_end|>',build_info:'Bonsai Rust/WASM 0.2 · 浏览器 WebGPU · W1A4',ui_settings:{titleGenerationUseLLM:false,preEncodeConversation:false,showMessageStats:true,systemMessage:'',symbolicMathEnabled:false,jsSandboxEnabled:false},cors_proxy_enabled:false};}
+function props(){return {role:'model',model_path:'Bonsai-1.7B-W1A4-WebGPU',total_slots:1,default_generation_settings:{id:0,n_ctx:2048,is_processing:false,prompt:'',params:{temperature:0.5,top_k:20,top_p:0.85,min_p:0,max_tokens:512,n_predict:512,repeat_penalty:1,repeat_last_n:64,presence_penalty:0,frequency_penalty:0,seed:-1,stop:[],samplers:['top_k','top_p','temperature'],reasoning_format:'none'}},modalities:{vision:false,audio:false,video:false},chat_template:'',bos_token:'',eos_token:'<|im_end|>',build_info:'Bonsai Rust/WASM 0.3 · 浏览器 WebGPU · W1A4',ui_settings:{titleGenerationUseLLM:false,preEncodeConversation:false,showMessageStats:true,systemMessage:'',symbolicMathEnabled:false,jsSandboxEnabled:false},cors_proxy_enabled:false};}
 window.fetch=async(input,options={})=>{
  const req=new Request(input,options);const url=new URL(req.url);if(url.origin!==location.origin)return nativeFetch(req);
  const path=url.pathname.startsWith(appBase.pathname)?'/'+url.pathname.slice(appBase.pathname.length):url.pathname;
@@ -32,12 +32,13 @@ window.fetch=async(input,options={})=>{
  await ready;const body=await req.json();if(body.n_predict===0)return json({choices:[]});
  const id=++serial,completionId='chatcmpl-'+crypto.randomUUID(),created=Math.floor(Date.now()/1000),encoder=new TextEncoder();
  const envelope=payload=>({id:completionId,object:'chat.completion.chunk',created,model:'Bonsai-1.7B-W1A4-WebGPU',...payload});
- let whole='';
+ let whole='',toolCalls=[];
  const stream=new ReadableStream({start(controller){
   const send=payload=>controller.enqueue(encoder.encode('data: '+JSON.stringify(envelope(payload))+'\n\n'));
   send({choices:[{index:0,delta:{role:'assistant',content:''},finish_reason:null}]});
   listeners.set(id,event=>{
    if(event.type==='delta'){whole+=event.text;send({choices:[{index:0,delta:{content:event.text},finish_reason:null}]});}
+   else if(event.type==='tool_calls'){toolCalls=event.tool_calls;send({choices:[{index:0,delta:{tool_calls:toolCalls},finish_reason:null}]});}
    else if(event.type==='progress')send({choices:[],prompt_progress:{total:event.prompt_tokens,cache:event.cached_tokens,processed:event.processed_tokens,time_ms:0}});
    else if(event.type==='done'){
     const usage={prompt_tokens:event.prompt_tokens,completion_tokens:event.completion_tokens,total_tokens:event.prompt_tokens+event.completion_tokens};
@@ -50,7 +51,7 @@ window.fetch=async(input,options={})=>{
  },cancel(){listeners.delete(id);worker.postMessage({op:'cancel',id});}});
  if(body.stream)return new Response(stream,{headers:{'Content-Type':'text/event-stream','Cache-Control':'no-cache'}});
  const reader=stream.getReader();let last;while(true){const {value,done}=await reader.read();if(done)break;for(const line of new TextDecoder().decode(value).split('\n'))if(line.startsWith('data: {')){const e=JSON.parse(line.slice(6));if(e.error)return json(e,400);if(e.usage)last=e;}}
- return json({id:completionId,object:'chat.completion',created,model:'Bonsai-1.7B-W1A4-WebGPU',choices:[{index:0,message:{role:'assistant',content:whole},finish_reason:last?.choices[0]?.finish_reason}],usage:last?.usage,timings:last?.timings});
+ return json({id:completionId,object:'chat.completion',created,model:'Bonsai-1.7B-W1A4-WebGPU',choices:[{index:0,message:{role:'assistant',content:whole||null,...(toolCalls.length?{tool_calls:toolCalls.map(({index,...call})=>call)}:{})},finish_reason:last?.choices[0]?.finish_reason}],usage:last?.usage,timings:last?.timings});
 };
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register(new URL('sw.js',appBase),{scope:appBase.pathname}).catch(console.error);

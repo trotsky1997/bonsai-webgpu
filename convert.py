@@ -59,5 +59,12 @@ def main():
     for name in ['tokenizer.json','config.json']:(dest/name).write_bytes((source/name).read_bytes())
     manifest['tokenizer']=pack_tokenizer(source,dest)
     manifest['checkpoint_sha256']=hashlib.file_digest(model.open('rb'),'sha256').hexdigest()
-    (dest/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+    manifest_path=dest/'manifest.json'
+    manifest_path.write_text(json.dumps(manifest,indent=2)+'\n')
+    package=pathlib.Path(__file__).resolve().parent
+    if dest.resolve()==(package/'model').resolve():
+        import re
+        worker=package/'web/worker.mjs'
+        digest=hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        worker.write_text(re.sub(r"const manifestSha='[0-9a-f]+';", "const manifestSha='"+digest+"';", worker.read_text()))
 if __name__=='__main__':main()
