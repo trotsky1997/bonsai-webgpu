@@ -1,0 +1,15 @@
+{
+  "name": "bonsai-webgpu",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "bonsai_webgpu_bg.wasm",
+    "bonsai_webgpu.js",
+    "bonsai_webgpu.d.ts"
+  ],
+  "main": "bonsai_webgpu.js",
+  "types": "bonsai_webgpu.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "job_id": "1791624650002681000-equivalence-check-1791624650002695000",
+  "type": "checked",
+  "id": 1001,
+  "result": {
+    "tokens": 36,
+    "logits": 5460084,
+    "max_abs_error": 0,
+    "unequal_logits": 0
+  },
+  "content": "",
+  "wall_ttft_ms": null,
+  "wall_ms": 516.3950000107288
+}

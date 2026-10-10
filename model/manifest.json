@@ -1,0 +1,160 @@
+{
+  "format": "bonsai-w1a4-webgpu-v1",
+  "weight_bits": 1,
+  "activation_bits": 4,
+  "activation_group": 32,
+  "weight_group": 128,
+  "files": [
+    {
+      "name": "base.bin",
+      "bytes": 43689320,
+      "sha256": "64b576760a657b75974e76db087a9e71539e6eff75533d82d8e2824d01f4ca78"
+    },
+    {
+      "name": "layer-00.bin",
+      "bytes": 7096032,
+      "sha256": "94080b72a51cebb47cc04d866c8e97d51f5523d01f55322345b59437b170b60d"
+    },
+    {
+      "name": "layer-01.bin",
+      "bytes": 7096032,
+      "sha256": "1f1219eee507bda2e7acbb333add2c1a524253560dccd001b7fe13ee91d03fc7"
+    },
+    {
+      "name": "layer-02.bin",
+      "bytes": 7096032,
+      "sha256": "8f0b5c07cedf55f123dcf82f81bf8e99f728f1d8739e9e7b0f58aeaeba52d916"
+    },
+    {
+      "name": "layer-03.bin",
+      "bytes": 7096032,
+      "sha256": "ab68b65d48361d1e39953ef69656580401db46ad34d1a62709b0d96c5efda3ac"
+    },
+    {
+      "name": "layer-04.bin",
+      "bytes": 7096032,
+      "sha256": "df30b952ee69133cb802b4c190b1dd24ccf0ef7cb8f935540281dc0685202ff7"
+    },
+    {
+      "name": "layer-05.bin",
+      "bytes": 7096032,
+      "sha256": "2174d04693087f863df50aefb6c24ec913659cc5e995f7be35f756fb40e553b8"
+    },
+    {
+      "name": "layer-06.bin",
+      "bytes": 7096032,
+      "sha256": "9962e9ce4757c45f618264dee3a94da29123edc7a56c4b712b037095b5185c0c"
+    },
+    {
+      "name": "layer-07.bin",
+      "bytes": 7096032,
+      "sha256": "aa778bf100e87762340048ba53084aab1ddface5d5b2da43642c05ff1b00cb32"
+    },
+    {
+      "name": "layer-08.bin",
+      "bytes": 7096032,
+      "sha256": "aeeb82aab5462ae79293f587bbac04c1936b0572d55ee1aa9828437603c615e5"
+    },
+    {
+      "name": "layer-09.bin",
+      "bytes": 7096032,
+      "sha256": "dfd40397b03bcb4a3618edc1e0e7ed17cb05fd1806f8d224fa092aa0f96421ab"
+    },
+    {
+      "name": "layer-10.bin",
+      "bytes": 7096032,
+      "sha256": "7be169e953fbd19386496d5d63fa5a70a946513a65be482255d85c60e12df408"
+    },
+    {
+      "name": "layer-11.bin",
+      "bytes": 7096032,
+      "sha256": "6216b42f026eed43daafbf3ed3f0735b85168566c0fc0ea80490b8a6df9e41af"
+    },
+    {
+      "name": "layer-12.bin",
+      "bytes": 7096032,
+      "sha256": "29ac62d43a7f87e631ed3cdcb57cd6645ea99aff47e7d56431d1b536f8d61397"
+    },
+    {
+      "name": "layer-13.bin",
+      "bytes": 7096032,
+      "sha256": "4a80b8323ea2cb40c96893efbb98e241cc42abae452f9f7da4697bf5dd64008d"
+    },
+    {
+      "name": "layer-14.bin",
+      "bytes": 7096032,
+      "sha256": "29db8a2e9b9b21c4f33f3e4117963e8b97cd00281d4d16532cfb39284d157994"
+    },
+    {
+      "name": "layer-15.bin",
+      "bytes": 7096032,
+      "sha256": "200e2fa39ecd4f38be3dc05faa5c65935f4e537dbf0f362c209e044964f14e50"
+    },
+    {
+      "name": "layer-16.bin",
+      "bytes": 7096032,
+      "sha256": "baebb8ddcaea2ecfe213ae179d21bc7b8bb48ce3c6fe9e5f4969ec2e910cf24e"
+    },
+    {
+      "name": "layer-17.bin",
+      "bytes": 7096032,
+      "sha256": "585196e8ddc8157f81212dfb0a6e4dbee8d8aa687c0a12d55cbc1c4e3d33ddf4"
+    },
+    {
+      "name": "layer-18.bin",
+      "bytes": 7096032,
+      "sha256": "071c514353023eb0f8806db512751352ac2af0774a2e53b8b2ac7b44fe9fb6b0"
+    },
+    {
+      "name": "layer-19.bin",
+      "bytes": 7096032,
+      "sha256": "05ad10adc0d9bfb6bfb40f5ce06009a9a8e041d420662ce05a15f9bd78d2f781"
+    },
+    {
+      "name": "layer-20.bin",
+      "bytes": 7096032,
+      "sha256": "e76b9adce18117116d4003806db211980c976ef3aed44e209e90cc3de52e4c57"
+    },
+    {
+      "name": "layer-21.bin",
+      "bytes": 7096032,
+      "sha256": "23396e80ea024574396ddba224ebfa1146167752580c910071698edf62911532"
+    },
+    {
+      "name": "layer-22.bin",
+      "bytes": 7096032,
+      "sha256": "9a2c110799e7917cb3b97e70e08a18d5681ebf0ed6439d4a4e8425796359636b"
+    },
+    {
+      "name": "layer-23.bin",
+      "bytes": 7096032,
+      "sha256": "db70c3ccbe594b8e42294ce713ff604c6417cb3b37525724703ba76128a6117b"
+    },
+    {
+      "name": "layer-24.bin",
+      "bytes": 7096032,
+      "sha256": "48501153a3360e16a230c4caa5fd8ce564c57bdc5a4ba990f6bd92d88c1360ea"
+    },
+    {
+      "name": "layer-25.bin",
+      "bytes": 7096032,
+      "sha256": "092bf6c99a6670c3684915f3f438bd0f8330f4921a0f0ae51e6bf8268a047a35"
+    },
+    {
+      "name": "layer-26.bin",
+      "bytes": 7096032,
+      "sha256": "b3a82326ecd8684231d9a18bd8749bff523e7df5bb8fc053c058b188b3a3ad26"
+    },
+    {
+      "name": "layer-27.bin",
+      "bytes": 7096032,
+      "sha256": "81e34fa4eab66d37f955b3ad8d3e41a7f325e15b26a6e423e4b708bfe0700515"
+    }
+  ],
+  "checkpoint_sha256": "1a311d069f600340421921d25fdf039aa9d1708079149d0a987e42d26250fb19",
+  "tokenizer": {
+    "name": "tokenizer.bin",
+    "bytes": 3191234,
+    "sha256": "0bcbc5dfc2896bd096a58e23b0f911a749dc6fa11c8b9b43bf720ab7d830aa62"
+  }
+}

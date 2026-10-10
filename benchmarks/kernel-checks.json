@@ -1,0 +1,31 @@
+{
+  "kernel-check": {
+    "job_id": "1791622537614695000",
+    "type": "checked",
+    "id": 1002,
+    "result": {
+      "cases": 40,
+      "linear_outputs": 81920,
+      "bit_errors": 0,
+      "scale_errors": 0,
+      "linear_errors": 0,
+      "max_abs_error": 0
+    },
+    "content": "",
+    "wall_ttft_ms": null,
+    "wall_ms": 50.935000002384186
+  },
+  "batch-check": {
+    "job_id": "1791622538035858000",
+    "type": "checked",
+    "id": 1003,
+    "result": {
+      "tokens": 40,
+      "max_abs_error": 0,
+      "unequal_logits": 0
+    },
+    "content": "",
+    "wall_ttft_ms": null,
+    "wall_ms": 348.544999986887
+  }
+}

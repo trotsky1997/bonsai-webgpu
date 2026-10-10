@@ -1,0 +1,79 @@
+{
+  "cases": 18,
+  "tokens": 1241,
+  "exact": true,
+  "per_case": [
+    {
+      "name": "english",
+      "exact": true
+    },
+    {
+      "name": "chinese",
+      "exact": true
+    },
+    {
+      "name": "code",
+      "exact": true
+    },
+    {
+      "name": "science",
+      "exact": true
+    },
+    {
+      "name": "reasoning",
+      "exact": true
+    },
+    {
+      "name": "chinese",
+      "exact": true
+    },
+    {
+      "name": "english_physics",
+      "exact": true
+    },
+    {
+      "name": "english_narrative",
+      "exact": true
+    },
+    {
+      "name": "chinese_science",
+      "exact": true
+    },
+    {
+      "name": "rust_code",
+      "exact": true
+    },
+    {
+      "name": "math",
+      "exact": true
+    },
+    {
+      "name": "reasoning",
+      "exact": true
+    },
+    {
+      "name": "holdout_network",
+      "exact": true
+    },
+    {
+      "name": "holdout_biology",
+      "exact": true
+    },
+    {
+      "name": "holdout_chinese",
+      "exact": true
+    },
+    {
+      "name": "holdout_rust",
+      "exact": true
+    },
+    {
+      "name": "holdout_arithmetic",
+      "exact": true
+    },
+    {
+      "name": "holdout_reasoning",
+      "exact": true
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{"name": "english_physics", "text": "Force is measured in newtons. According to Newton's second law, force equals mass multiplied by acceleration. A force of one newton gives a mass of one kilogram an acceleration of one meter per second squared."}
+{"name": "english_narrative", "text": "The rain stopped before sunrise. Anna opened the window and heard birds singing in the garden. She made a cup of tea, picked up her notebook, and began to write about the journey she had taken the previous summer."}
+{"name": "chinese_science", "text": "水受热后会蒸发成水蒸气。水蒸气上升并冷却，凝结成小水滴，形成云。云中的水滴聚集后落到地面，成为降雨。这些水流入河流和海洋，再次参与水循环。"}
+{"name": "rust_code", "text": "fn sum(values: &[i32]) -> i32 {\n    values.iter().copied().sum()\n}\n\nfn main() {\n    let numbers = [1, 2, 3, 4];\n    println!(\"{}\", sum(&numbers));\n}\n"}
+{"name": "math", "text": "Two plus two equals four. Three multiplied by five equals fifteen. The square root of nine is three. A triangle has three sides, while a square has four equal sides."}
+{"name": "reasoning", "text": "All mammals are animals. A dolphin is a mammal. Therefore, a dolphin is an animal. If every book on a shelf is blue and a dictionary is on that shelf, then the dictionary is blue."}

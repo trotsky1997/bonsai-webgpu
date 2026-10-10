@@ -1,0 +1,4 @@
+{
+  "positive_finite_fp32_cases": 1000000,
+  "scale_div7_bit_errors": 0
+}

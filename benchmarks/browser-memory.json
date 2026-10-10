@@ -1,0 +1,51 @@
+{
+  "job_id": "browser-memory",
+  "measurement": {
+    "breakdown": [
+      {
+        "attribution": [],
+        "bytes": 31089211,
+        "types": [
+          "Shared"
+        ]
+      },
+      {
+        "attribution": [],
+        "bytes": 0,
+        "types": []
+      },
+      {
+        "attribution": [
+          {
+            "scope": "DedicatedWorkerGlobalScope",
+            "url": "http://127.0.0.1:18902/web/worker.mjs"
+          }
+        ],
+        "bytes": 172503203,
+        "types": [
+          "JavaScript"
+        ]
+      },
+      {
+        "attribution": [],
+        "bytes": 36808,
+        "types": [
+          "DOM"
+        ]
+      },
+      {
+        "attribution": [
+          {
+            "scope": "Window",
+            "url": "http://127.0.0.1:18902/bench.html"
+          }
+        ],
+        "bytes": 288360,
+        "types": [
+          "JavaScript"
+        ]
+      }
+    ],
+    "bytes": 203917582
+  }
+}

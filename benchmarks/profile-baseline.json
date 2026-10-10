@@ -1,0 +1,2563 @@
+{
+  "job_id": "1791623870672407000-profile-1791623870672416000",
+  "type": "checked",
+  "id": 1001,
+  "result": {
+    "dispatches": 508,
+    "rows": [
+      {
+        "index": 0,
+        "kernel": "embed",
+        "us": 65.536
+      },
+      {
+        "index": 1,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 2,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 3,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 4,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 5,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 6,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 7,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 8,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 9,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 10,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 11,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 12,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 13,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 14,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 15,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 16,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 17,
+        "kernel": "project",
+        "us": 196.608
+      },
+      {
+        "index": 18,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 19,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 20,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 21,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 22,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 23,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 24,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 25,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 26,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 27,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 28,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 29,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 30,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 31,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 32,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 33,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 34,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 35,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 36,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 37,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 38,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 39,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 40,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 41,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 42,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 43,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 44,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 45,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 46,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 47,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 48,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 49,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 50,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 51,
+        "kernel": "silu",
+        "us": 65.536
+      },
+      {
+        "index": 52,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 53,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 54,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 55,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 56,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 57,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 58,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 59,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 60,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 61,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 62,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 63,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 64,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 65,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 66,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 67,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 68,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 69,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 70,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 71,
+        "kernel": "project",
+        "us": 196.608
+      },
+      {
+        "index": 72,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 73,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 74,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 75,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 76,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 77,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 78,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 79,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 80,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 81,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 82,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 83,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 84,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 85,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 86,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 87,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 88,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 89,
+        "kernel": "project",
+        "us": 196.608
+      },
+      {
+        "index": 90,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 91,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 92,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 93,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 94,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 95,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 96,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 97,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 98,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 99,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 100,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 101,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 102,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 103,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 104,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 105,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 106,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 107,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 108,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 109,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 110,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 111,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 112,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 113,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 114,
+        "kernel": "rope",
+        "us": 65.536
+      },
+      {
+        "index": 115,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 116,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 117,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 118,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 119,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 120,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 121,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 122,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 123,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 124,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 125,
+        "kernel": "project",
+        "us": 196.608
+      },
+      {
+        "index": 126,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 127,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 128,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 129,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 130,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 131,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 132,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 133,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 134,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 135,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 136,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 137,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 138,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 139,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 140,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 141,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 142,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 143,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 144,
+        "kernel": "add",
+        "us": 65.536
+      },
+      {
+        "index": 145,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 146,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 147,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 148,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 149,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 150,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 151,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 152,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 153,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 154,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 155,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 156,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 157,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 158,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 159,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 160,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 161,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 162,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 163,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 164,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 165,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 166,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 167,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 168,
+        "kernel": "rope",
+        "us": 65.536
+      },
+      {
+        "index": 169,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 170,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 171,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 172,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 173,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 174,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 175,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 176,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 177,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 178,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 179,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 180,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 181,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 182,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 183,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 184,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 185,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 186,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 187,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 188,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 189,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 190,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 191,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 192,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 193,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 194,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 195,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 196,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 197,
+        "kernel": "project",
+        "us": 196.608
+      },
+      {
+        "index": 198,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 199,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 200,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 201,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 202,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 203,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 204,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 205,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 206,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 207,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 208,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 209,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 210,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 211,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 212,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 213,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 214,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 215,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 216,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 217,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 218,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 219,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 220,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 221,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 222,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 223,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 224,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 225,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 226,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 227,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 228,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 229,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 230,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 231,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 232,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 233,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 234,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 235,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 236,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 237,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 238,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 239,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 240,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 241,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 242,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 243,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 244,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 245,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 246,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 247,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 248,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 249,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 250,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 251,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 252,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 253,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 254,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 255,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 256,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 257,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 258,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 259,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 260,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 261,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 262,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 263,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 264,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 265,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 266,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 267,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 268,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 269,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 270,
+        "kernel": "add",
+        "us": 65.536
+      },
+      {
+        "index": 271,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 272,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 273,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 274,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 275,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 276,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 277,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 278,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 279,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 280,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 281,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 282,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 283,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 284,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 285,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 286,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 287,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 288,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 289,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 290,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 291,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 292,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 293,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 294,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 295,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 296,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 297,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 298,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 299,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 300,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 301,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 302,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 303,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 304,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 305,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 306,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 307,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 308,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 309,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 310,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 311,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 312,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 313,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 314,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 315,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 316,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 317,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 318,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 319,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 320,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 321,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 322,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 323,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 324,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 325,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 326,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 327,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 328,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 329,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 330,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 331,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 332,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 333,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 334,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 335,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 336,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 337,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 338,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 339,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 340,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 341,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 342,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 343,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 344,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 345,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 346,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 347,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 348,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 349,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 350,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 351,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 352,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 353,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 354,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 355,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 356,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 357,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 358,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 359,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 360,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 361,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 362,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 363,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 364,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 365,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 366,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 367,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 368,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 369,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 370,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 371,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 372,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 373,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 374,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 375,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 376,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 377,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 378,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 379,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 380,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 381,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 382,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 383,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 384,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 385,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 386,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 387,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 388,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 389,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 390,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 391,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 392,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 393,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 394,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 395,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 396,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 397,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 398,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 399,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 400,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 401,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 402,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 403,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 404,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 405,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 406,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 407,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 408,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 409,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 410,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 411,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 412,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 413,
+        "kernel": "project",
+        "us": 131.072
+      },
+      {
+        "index": 414,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 415,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 416,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 417,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 418,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 419,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 420,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 421,
+        "kernel": "attention",
+        "us": 65.536
+      },
+      {
+        "index": 422,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 423,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 424,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 425,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 426,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 427,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 428,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 429,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 430,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 431,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 432,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 433,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 434,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 435,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 436,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 437,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 438,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 439,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 440,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 441,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 442,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 443,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 444,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 445,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 446,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 447,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 448,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 449,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 450,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 451,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 452,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 453,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 454,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 455,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 456,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 457,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 458,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 459,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 460,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 461,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 462,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 463,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 464,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 465,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 466,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 467,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 468,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 469,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 470,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 471,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 472,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 473,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 474,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 475,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 476,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 477,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 478,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 479,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 480,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 481,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 482,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 483,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 484,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 485,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 486,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 487,
+        "kernel": "norm",
+        "us": 65.536
+      },
+      {
+        "index": 488,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 489,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 490,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 491,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 492,
+        "kernel": "rope",
+        "us": 0
+      },
+      {
+        "index": 493,
+        "kernel": "attention",
+        "us": 0
+      },
+      {
+        "index": 494,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 495,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 496,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 497,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 498,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 499,
+        "kernel": "project",
+        "us": 0
+      },
+      {
+        "index": 500,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 501,
+        "kernel": "silu",
+        "us": 0
+      },
+      {
+        "index": 502,
+        "kernel": "pack",
+        "us": 0
+      },
+      {
+        "index": 503,
+        "kernel": "project",
+        "us": 65.536
+      },
+      {
+        "index": 504,
+        "kernel": "add",
+        "us": 0
+      },
+      {
+        "index": 505,
+        "kernel": "norm",
+        "us": 0
+      },
+      {
+        "index": 506,
+        "kernel": "pack",
+        "us": 65.536
+      },
+      {
+        "index": 507,
+        "kernel": "project",
+        "us": 196.608
+      }
+    ],
+    "totals_us": {
+      "add": 131.072,
+      "attention": 917.5040000000004,
+      "embed": 65.536,
+      "norm": 851.9680000000003,
+      "pack": 1048.5760000000005,
+      "project": 10289.152000000007,
+      "rope": 131.072,
+      "silu": 65.536
+    }
+  },
+  "content": "",
+  "wall_ttft_ms": null,
+  "wall_ms": 45.15500000119209
+}

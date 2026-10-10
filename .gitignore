@@ -1,0 +1,11 @@
+/target/
+/work/
+/.build/
+/.runtime/
+/site/
+**/__pycache__/
+**/target/
+*.log
+.DS_Store
+/benchmarks/browser-latest.json
+/benchmarks/bonsai-mlx-benchmark
