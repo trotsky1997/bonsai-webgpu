@@ -1,10 +1,11 @@
-import {NgramDraft} from './ngram.mjs?v=0.4.1.1';
-import init, {Engine} from './pkg/bonsai_webgpu.js?v=0.4.1.1';
-import {renderPrompt,toolsFor,ToolCallParser} from './chat-template.mjs?v=0.4.1.1';
-export {renderPrompt} from './chat-template.mjs?v=0.4.1.1';
+import {PrefixCache,commonPrefix} from './prefix-cache.mjs?v=0.4.1.2';
+import {NgramDraft} from './ngram.mjs?v=0.4.1.2';
+import init, {Engine} from './pkg/bonsai_webgpu.js?v=0.4.1.2';
+import {renderPrompt,toolsFor,ToolCallParser} from './chat-template.mjs?v=0.4.1.2';
+export {renderPrompt} from './chat-template.mjs?v=0.4.1.2';
 const manifestSha='13bbc348fe1832a85471abb8cc7794fa99cd6e94492f5018f1002b6ae9eb63a6';
 let cacheName,forceNetwork=false,prefetchDepth;
-let cachedAttention;
+let cachedAttention,prefixes,warmTask,stopWarm=false;
 let engine, ready, busy=false, cancelled=false, cached=[], loadInfo;
 const emit=value=>postMessage(value);
 let loadStats=[],cachePromise;
@@ -27,7 +28,7 @@ async function asset(path,expected) {
 async function load(context=2048,batch=8,fast=true,kvBits=4) {
  const started=performance.now();emit({type:'loading',message:'正在初始化 WebGPU…',percent:0});
  if(!navigator.gpu)throw Error('当前浏览器没有 WebGPU；请使用支持 WebGPU 的新版 Chrome、Edge 或 Safari。');
- const wasmPromise=init({module_or_path:new URL('./pkg/bonsai_webgpu_bg.wasm?v=0.4.1.1',import.meta.url)});
+ const wasmPromise=init({module_or_path:new URL('./pkg/bonsai_webgpu_bg.wasm?v=0.4.1.2',import.meta.url)});
  const manifest=JSON.parse(new TextDecoder().decode(await asset('manifest.json',manifestSha)));
  const tk=manifest.tokenizer??{name:'tokenizer.json'};
  const tokenizerPromise=asset(tk.name,tk.sha256);
@@ -45,6 +46,7 @@ async function load(context=2048,batch=8,fast=true,kvBits=4) {
  }
  await engine.finish_load();
  loadInfo={runtime_version:'0.4.1',backend:'browser-webgpu',kernel:fast?'signmag-exact-unrolled-g32':'signmag-exact-centered-g32',weight_bits:1,activation_bits:4,kv_bits:kvBits,context,batch,adapter:engine.adapter(),load_ms:performance.now()-started,load_stages:{wasm_ms:wasm-started,tokenizer_ms:tok-wasm,engine_ms:created-tok,upload_ms:upload,files:loadStats},memory:engine.memory(),checkpoint_sha256:manifest.checkpoint_sha256};
+ prefixes=new PrefixCache(engine,{manifest:manifestSha,context,kv_bits:kvBits,fast,adapter:engine.adapter(),browser:navigator.userAgent});
  emit({type:'ready',...loadInfo});return loadInfo;
 }
 function sample(candidates,body,rng=Math.random){
@@ -55,10 +57,32 @@ function sample(candidates,body,rng=Math.random){
  weights=weights.slice(0,keep);let choice=rng()*weights.reduce((a,b)=>a+b,0);
  for(let i=0;i<keep;i++){choice-=weights[i];if(choice<=0)return candidates[i][0];}return candidates[keep-1][0];
 }
-async function generate(id,body){
- if(busy)throw Error('模型正在回答另一个请求');busy=true;cancelled=false;
+async function warmPrefix(id,body){
+ await ready;if(busy)return emit({type:'prefix-ready',id,skipped:true});busy=true;
+ const started=performance.now();
  try{
-  await ready;const started=performance.now();const prompt=body.prompt??renderPrompt(body);const ids=Array.from(engine.encode(prompt));
+  const ids=Array.from(engine.encode(renderPrompt(body))),key=(body.prefill_attention??'flashprefill')+':'+(body.flashprefill_alpha??0.1);
+  const plan=await prefixes.plan(body,ids,key);if(!plan)return emit({type:'prefix-ready',id,skipped:true});
+  let entry=await prefixes.find(plan),source='computed';
+  if(!entry){
+   // Idle prewarming never evicts an active conversation's KV. Its snapshot can
+   // instead be captured by the next ordinary request with this configuration.
+   if(cached.length)return emit({type:'prefix-ready',id,skipped:true});
+   engine.reset();cachedAttention=key;engine.set_prefill_attention(0,false,0.1);
+   for(let i=0;i<plan.count&&!stopWarm;i+=loadInfo.batch){const chunk=plan.tokens.slice(i,i+loadInfo.batch);await engine.forward(new Uint32Array(chunk),1);cached.push(...chunk);emit({type:'prefix-progress',id,processed:cached.length,total:plan.count});}
+   if(stopWarm&&cached.length<plan.count)return emit({type:'prefix-ready',id,interrupted:true,tokens:cached.length});
+   entry=prefixes.capture(plan);
+  }else source=entry.origin;
+  const persisted=await prefixes.persist(entry);
+  emit({type:'prefix-ready',id,tokens:plan.count,source,persisted,ms:performance.now()-started,memory:engine.memory()});
+ }finally{busy=false;}
+}
+async function generate(id,body){
+ if(busy&&!warmTask)throw Error('模型正在回答另一个请求');cancelled=false;
+ const requestedAt=performance.now();if(warmTask){stopWarm=true;await warmTask.catch(()=>{});}const warmWait=performance.now()-requestedAt;
+ if(busy)throw Error('模型正在回答另一个请求');busy=true;
+ try{
+  await ready;const started=requestedAt;const prompt=body.prompt??renderPrompt(body);const ids=Array.from(engine.encode(prompt));
   if(!ids.length||ids.length>=loadInfo.context)throw Error(`上下文超过 ${loadInfo.context} token，请新建对话或缩短内容。`);
   const requestedMax=body.max_completion_tokens??body.max_tokens??body.n_predict??512;
   const max=Math.min(requestedMax===-1?loadInfo.context:requestedMax,loadInfo.context-ids.length);
@@ -69,10 +93,15 @@ async function generate(id,body){
   const attention=body.prefill_attention??'flashprefill';if(!['dense','flashprefill'].includes(attention))throw Error('prefill_attention: dense or flashprefill');
   const cacheKey=attention+':'+(body.flashprefill_alpha??0.1);if(cachedAttention!==cacheKey){engine.reset();cached=[];cachedAttention=cacheKey;}
   engine.set_prefill_attention(ids.length,attention==='flashprefill',body.flashprefill_alpha??0.1);
-  let prefix=0;while(prefix<Math.min(cached.length,ids.length-1)&&cached[prefix]===ids[prefix])prefix++;
+  const cacheStats={enabled:body.prefix_cache!==false,system_tokens:0,reused_tokens:0,source:'miss',lookup_ms:0,restore_ms:0,warm_wait_ms:warmWait,persisted:false};
+  const lookupStart=performance.now();const plan=await prefixes.plan(body,ids,cacheKey);let entry=null;
+  let prefix=commonPrefix(cached,ids,ids.length-1);cacheStats.source=prefix?'active':'miss';
+  if(plan){cacheStats.system_tokens=plan.count;if(prefix<plan.count){entry=await prefixes.find(plan);if(entry){const t=performance.now();cacheStats.source=prefixes.restore(entry);cacheStats.restore_ms=performance.now()-t;prefix=entry.count;cached=entry.tokens.slice();}}}
+  cacheStats.lookup_ms=performance.now()-lookupStart;cacheStats.reused_tokens=Math.min(prefix,plan?.count??0);
   engine.truncate(prefix);cached.length=prefix;let candidates;
+  if(plan&&prefix>=plan.count)entry??=prefixes.capture(plan);
   emit({type:'progress',id,prompt_tokens:ids.length,cached_tokens:prefix,processed_tokens:prefix});
-  for(let i=prefix;i<ids.length;i+=loadInfo.batch){if(cancelled)break;const chunk=ids.slice(i,i+loadInfo.batch);candidates=await engine.forward(new Uint32Array(chunk),topk);cached.push(...chunk);emit({type:'progress',id,prompt_tokens:ids.length,cached_tokens:prefix,processed_tokens:i+chunk.length});}
+  for(let i=prefix;i<ids.length;i+=loadInfo.batch){if(cancelled)break;const chunk=ids.slice(i,i+loadInfo.batch);candidates=await engine.forward(new Uint32Array(chunk),topk);cached.push(...chunk);if(plan&&!entry&&cached.length>=plan.count)entry=prefixes.capture(plan);emit({type:'progress',id,prompt_tokens:ids.length,cached_tokens:prefix,processed_tokens:i+chunk.length});}
   engine.set_prefill_attention(0,false,0.1);
   const prefill=performance.now()-started;const decodeStart=performance.now();let first=null,generated=[],sent='',finish='length';
   const tools=toolsFor(body);
@@ -117,7 +146,8 @@ async function generate(id,body){
   if(!stopped){const decoded=engine.decode(new Uint32Array(generated));if(decoded.startsWith(sent)&&decoded.length>sent.length)deliver(decoded.slice(sent.length));}
   const calls=parser?.finish(cancelled)??[];
   if(calls.length){for(const call of calls)if(!sentCalls.has(call.id))sendCall(call);finish='tool_calls';}
-  emit({type:'done',id,finish_reason:finish,prompt_tokens:ids.length,cached_tokens:prefix,completion_tokens:generated.length,prefill_ms:prefill,decode_ms:performance.now()-decodeStart,ttft_ms:first,tokens:generated,tool_json_repairs:parser?.repairs??0,ngram:ngramStats,memory:engine.memory()});
+  const decodeMs=performance.now()-decodeStart;cacheStats.persisted=await prefixes.persist(entry);
+  emit({type:'done',id,finish_reason:finish,prompt_tokens:ids.length,cached_tokens:prefix,completion_tokens:generated.length,prefill_ms:prefill,decode_ms:decodeMs,ttft_ms:first,prefix_cache:cacheStats,tokens:generated,tool_json_repairs:parser?.repairs??0,ngram:ngramStats,memory:engine.memory()});
  }finally{engine?.set_prefill_attention(0,false,0.1);busy=false;}
 }
 async function diagnose(id,job){
@@ -137,12 +167,16 @@ onmessage=async({data})=>{
  const {op,id}=data;
  try{
   if(op==='init'){cacheName=data.cache_name;forceNetwork=!!data.force_network;prefetchDepth=data.prefetch;if(prefetchDepth!==undefined&&(!Number.isInteger(prefetchDepth)||prefetchDepth<1||prefetchDepth>8))throw Error("prefetch 1..8");ready=load(data.context??2048,data.batch??8,(data.fast??true),data.kv_bits??4);await ready;}
-  else if(op==='cancel'){cancelled=true;}
+  else if(op==='warm-prefix'){
+   if(busy||warmTask)emit({type:'prefix-ready',id,skipped:true});
+   else {stopWarm=false;warmTask=warmPrefix(id,data.body).finally(()=>{warmTask=null;});await warmTask;}
+  }
+  else if(op==='cancel'){cancelled=true;stopWarm=true;}
   else if(op==='generate'){await generate(id,data.body);}
   else if(op==='reset'){await ready;if(busy)throw Error('busy');engine.reset();cached=[];emit({type:'reset',id});}
   else if(op==='diagnose'){const result=await diagnose(id,data.job);emit({type:'diagnosed',id,result});}
   else if(op==='info'){await ready;emit({type:'info',id,...loadInfo,memory:engine.memory()});}
-  else if(op==='kv-mode'){await ready;if(busy)throw Error('busy');engine.set_kv_bits(data.bits);cached=[];loadInfo.kv_bits=data.bits;emit({type:'checked',id,result:engine.memory()});}
+  else if(op==='kv-mode'){await ready;if(busy)throw Error('busy');engine.set_kv_bits(data.bits);cached=[];prefixes.clear();prefixes=new PrefixCache(engine,{...prefixes.config,kv_bits:data.bits});loadInfo.kv_bits=data.bits;emit({type:'checked',id,result:engine.memory()});}
   else if(op==='kv-check'){await ready;if(busy)throw Error('busy');emit({type:'checked',id,result:await engine.kv_check(data.count??4097)});}
   else if(op==='tiled-mode'){await ready;if(busy)throw Error('busy');engine.set_tiled_attention(!!data.enabled);engine.reset();cached=[];emit({type:'checked',id,result:{tiled:!!data.enabled}});}
   else if(op==='profile'){await ready;if(busy)throw Error('busy');emit({type:'checked',id,result:await engine.profile(data.token??9707,data.position??0)});}
@@ -173,6 +207,27 @@ onmessage=async({data})=>{
    engine.reset();let batched;for(let i=0;i<ids.length;i+=loadInfo.batch)batched=await engine.logits_chunk(new Uint32Array(ids.slice(i,i+loadInfo.batch)));
    let max=0,count=0;for(let i=0;i<single.length;i++){max=Math.max(max,Math.abs(single[i]-batched[i]));if(single[i]!==batched[i])count++;}
    cached=[];engine.reset();emit({type:'checked',id,result:{tokens:ids.length,max_abs_error:max,unequal_logits:count}});
+  }
+  else if(op==='prefix-check'){
+   await ready;if(busy)throw Error('busy');busy=true;
+   try{
+    const original=loadInfo.kv_bits,checks=[];
+    const ids=Array.from(engine.encode('The quick brown fox jumps over the lazy dog. '.repeat(40))).slice(0,304),n=128;
+    for(const bits of [4,32]){
+     engine.set_kv_bits(bits);prefixes.clear();engine.reset();
+     for(let i=0;i<n;i+=loadInfo.batch)await engine.forward(new Uint32Array(ids.slice(i,i+loadInfo.batch)),1);
+     engine.save_prefix(0,n);const payload=await engine.export_prefix(0);
+     let reference;for(let i=n;i<ids.length;i+=loadInfo.batch)reference=await engine.logits_chunk(new Uint32Array(ids.slice(i,i+loadInfo.batch)));
+     engine.reset();engine.restore_prefix(0);let actual;
+     for(let i=n;i<ids.length;i+=loadInfo.batch)actual=await engine.logits_chunk(new Uint32Array(ids.slice(i,i+loadInfo.batch)));
+     const gpuExact=reference.every((x,i)=>x===actual[i]);
+     engine.drop_prefix(0);engine.import_prefix(1,n,bits,payload);engine.reset();engine.restore_prefix(1);
+     const roundtrip=await engine.export_prefix(1),bytesExact=payload.every((x,i)=>x===roundtrip[i]);
+     for(let i=n;i<ids.length;i+=loadInfo.batch)actual=await engine.logits_chunk(new Uint32Array(ids.slice(i,i+loadInfo.batch)));
+     checks.push({bits,prefix_tokens:n,total_tokens:ids.length,bytes:payload.length,gpu_logits_exact:gpuExact,disk_logits_exact:reference.every((x,i)=>x===actual[i]),payload_exact:bytesExact});
+    }
+    engine.set_kv_bits(original);prefixes.clear();engine.reset();cached=[];emit({type:'checked',id,result:checks});
+   }finally{busy=false;}
   }
  }catch(e){emit({type:'error',id,message:String(e?.message??e),stack:e?.stack});}
 };

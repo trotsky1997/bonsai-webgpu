@@ -27,6 +27,7 @@
 		modelsStore,
 		serverStore,
 		settingsStore,
+		toolsStore,
 		tabsStore,
 		versionStore
 	} from '$lib/stores';
@@ -38,6 +39,23 @@
 	import { pwaAssetsHead } from 'virtual:pwa-assets/head';
 
 	let { children } = $props();
+
+	// Warm the exact initial system block for the selected conversation policy.
+	// The transport coalesces identical configurations and only schedules idle work.
+	$effect(() => {
+		if (!browser) return;
+		const conversation = conversationsStore.activeConversation;
+		const tools = toolsStore.getEnabledToolsForLLM(
+			conversation?.disabledTools ? new Set(conversation.disabledTools) : undefined,
+			conversation?.disabledToolCategories ? new Set(conversation.disabledToolCategories) : undefined
+		);
+		const initial = conversationsStore.activeMessages[0];
+		const system = initial?.role === 'system' ? initial.content : settingsStore.config.systemMessage?.trim();
+		window.dispatchEvent(new CustomEvent('bonsai-prefix-config', { detail: {
+			messages: [...(system ? [{role:'system',content:system}] : []), {role:'user',content:''}],
+			tools, client_capabilities: ['interactive-ui.v1']
+		} }));
+	});
 
 	// migrations and store startup, ordered explicitly instead of import side effects
 	void initStores();

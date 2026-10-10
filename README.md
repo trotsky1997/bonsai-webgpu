@@ -4,9 +4,11 @@
 
 Native interactive cards, persistent virtual workspace tools and HTML artifacts, silent image OCR with result caching, exact n-gram lookup drafts, and user-key LangSearch search. Defaults: **128K context/KV limit, INT4 KV and sparse prefill enabled**. KV grows on demand. 128K YaRN and FlashPrefill-inspired sparse prefill remain experimental.
 
-Token usage details includes speculative acceptance rate, average accepted prefix length, cumulative accepted tokens, and current/cumulative KV prefix hit rate. Counters follow the selected conversation branch and survive refresh; refreshing resets the live GPU cache.
+Token usage details includes speculative acceptance rate, average accepted prefix length, cumulative accepted tokens, and current/cumulative KV prefix hit rate. Counters follow the selected conversation branch and survive refresh; refreshing restores the fixed system prefix from IndexedDB, while conversation GPU KV starts empty.
 
 The system prompt uses a minimal direct-answer mode and capability-specific Agent instructions. An explicit whole-clause request such as “No tools” or “不要调用工具” disables tools for that turn. See [prompt policy and measured examples](SYSTEM_PROMPT.md).
+
+Fixed system-prefix KV is enabled by default: idle prewarming, two GPU snapshots and bounded IndexedDB persistence. Measured TTFT after losing the active KV: **3109.9 → 88.8 ms** median over seven pairs; one disk-restore sample was 173.4 ms. Outputs were identical. See [implementation, memory limits and measurements](SYSTEM_PREFIX_CACHE.md).
 
 See [Agent/UI protocol and rebuild](INTERACTIVE_UI.md) and [KV layout, long context and sparse prefill](LONG_CONTEXT.md).
 

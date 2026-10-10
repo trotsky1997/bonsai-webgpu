@@ -8,7 +8,12 @@ export class Engine {
     adapter(): string;
     static create(tokenizer_bytes: Uint8Array, capacity: number, batch: number, kv_bits?: number | null): Promise<Engine>;
     decode(tokens: Uint32Array): string;
+    drop_prefix(slot: number): void;
     encode(text: string): Uint32Array;
+    /**
+     * Compact layer payloads; no capacity padding, conversation tokens or logits.
+     */
+    export_prefix(slot: number): Promise<Uint8Array>;
     finish_load(): Promise<void>;
     /**
      * Returns [token-id-as-u32-bits, score] pairs from GPU partitions, globally sorted.
@@ -18,6 +23,7 @@ export class Engine {
      * Candidate rows for every input position, used for exact lookup-draft verification.
      */
     forward_all(tokens: Uint32Array, top_k: number): Promise<any>;
+    import_prefix(slot: number, tokens: number, bits: number, bytes: Uint8Array): void;
     /**
      * Real WebGPU pack and projection checks against a Rust scalar oracle.
      */
@@ -39,6 +45,11 @@ export class Engine {
      */
     profile(token: number, position: number): Promise<any>;
     reset(): void;
+    restore_prefix(slot: number): number;
+    /**
+     * Pin only the validated, immutable initial system block, independently of chat KV.
+     */
+    save_prefix(slot: number, tokens: number): void;
     set_kv_bits(bits: number): void;
     set_prefill_attention(end: number, sparse: boolean, alpha: number): void;
     set_reference(reference: boolean): Promise<void>;
@@ -58,10 +69,13 @@ export interface InitOutput {
     readonly engine_adapter: (a: number) => [number, number];
     readonly engine_create: (a: number, b: number, c: number, d: number, e: number) => any;
     readonly engine_decode: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly engine_drop_prefix: (a: number, b: number) => void;
     readonly engine_encode: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly engine_export_prefix: (a: number, b: number) => any;
     readonly engine_finish_load: (a: number) => any;
     readonly engine_forward: (a: number, b: number, c: number, d: number) => any;
     readonly engine_forward_all: (a: number, b: number, c: number, d: number) => any;
+    readonly engine_import_prefix: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly engine_kernel_check: (a: number) => any;
     readonly engine_kv_check: (a: number, b: number) => any;
     readonly engine_load_blob: (a: number, b: any, c: number) => [number, number];
@@ -71,6 +85,8 @@ export interface InitOutput {
     readonly engine_position: (a: number) => number;
     readonly engine_profile: (a: number, b: number, c: number) => any;
     readonly engine_reset: (a: number) => void;
+    readonly engine_restore_prefix: (a: number, b: number) => [number, number, number];
+    readonly engine_save_prefix: (a: number, b: number, c: number) => [number, number];
     readonly engine_set_kv_bits: (a: number, b: number) => [number, number];
     readonly engine_set_prefill_attention: (a: number, b: number, c: number, d: number) => [number, number];
     readonly engine_set_reference: (a: number, b: number) => any;
@@ -82,7 +98,7 @@ export interface InitOutput {
     readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___js_sys_fbe64af394509c1f___Function_fn_wasm_bindgen_fddd185fc99cd29e___JsValue_____wasm_bindgen_fddd185fc99cd29e___sys__Undefined___js_sys_fbe64af394509c1f___Function_fn_wasm_bindgen_fddd185fc99cd29e___JsValue_____wasm_bindgen_fddd185fc99cd29e___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_fddd185fc99cd29e___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__27: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__32: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

@@ -80,7 +80,9 @@ export interface ChatMessagePromptProgress {
 }
 
 export interface ChatMessageTimings {
+	ttft_ms?: number;
 	prompt_total_n?: number;
+	prefix_cache?: {enabled:boolean;system_tokens:number;reused_tokens:number;source:string;lookup_ms:number;restore_ms:number;warm_wait_ms:number;persisted:boolean};
 	ngram?: ChatMessageNgramStats;
 	cache_n?: number;
 	predicted_ms?: number;

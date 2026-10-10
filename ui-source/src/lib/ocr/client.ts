@@ -10,7 +10,7 @@ export function recognizeImage(preview: string, signal: AbortSignal): Promise<Im
   if(signal.aborted) throw new DOMException('Cancelled','AbortError');
   return new Promise<ImageText>((resolve,reject)=>{
    const id=++nextId;
-   worker ??= new Worker(new URL('./web/ocr/worker.mjs?v=0.4.1.1',document.baseURI),{type:'module'});
+   worker ??= new Worker(new URL('./web/ocr/worker.mjs?v=0.4.1.2',document.baseURI),{type:'module'});
    const cleanup=()=>signal.removeEventListener('abort',abort);
    const fail=(error:unknown)=>{cleanup();worker?.terminate();worker=undefined;reject(error);};
    const abort=()=>fail(new DOMException('Cancelled','AbortError'));

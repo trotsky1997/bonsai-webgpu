@@ -71,10 +71,10 @@ export function systemInstructions(tools=[],imageContext=null){
  if(tools.length)rules.push('Use enabled tools and schema-valid JSON. Wait for results; never invent success. Correct errors once; if they recur, explain the obstacle.');
  return rules.join('\n');
 }
-export function renderPrompt(body){
+export function renderSystemPrefix(body){
  if(!Array.isArray(body.messages)||!body.messages.length)throw Error('messages required');
  const messages=body.messages.map(m=>({...m,role:m.role==='developer'?'system':m.role}));
- const tools=toolsFor(body),imageContext=imageTextContext(body);let prompt='<|im_start|>system\n'+systemInstructions(tools,imageContext);const lastUser=messages.findLastIndex(m=>m.role==='user'&&!(contentOf(m).startsWith('<tool_response>')&&contentOf(m).endsWith('</tool_response>')));
+ const tools=toolsFor(body),imageContext=imageTextContext(body);let prompt='<|im_start|>system\n'+systemInstructions(tools,imageContext);
  if(messages.at(-1).role==='tool')prompt+='\nUse the tool results for the next step. Once the request is complete, answer briefly; do not repeat completed operations.';
  if(messages[0].role==='system'&&contentOf(messages[0]))prompt+='\n\n'+contentOf(messages[0]);
  if(tools.length){
@@ -86,6 +86,13 @@ export function renderPrompt(body){
   prompt+='\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{"name": <function-name>, "arguments": <args-json-object>}\n</tool_call><|im_end|>\n';
  }
  else prompt+='<|im_end|>\n';
+ return prompt;
+}
+export function renderPrompt(body){
+ let prompt=renderSystemPrefix(body);
+ const messages=body.messages.map(m=>({...m,role:m.role==='developer'?'system':m.role}));
+ const imageContext=imageTextContext(body);
+ const lastUser=messages.findLastIndex(m=>m.role==='user'&&!(contentOf(m).startsWith('<tool_response>')&&contentOf(m).endsWith('</tool_response>')));
  for(const [index,message] of messages.entries()){
   const role=message.role;if(!['system','user','assistant','tool'].includes(role))throw Error('Unsupported message role');
   if(role==='system'&&index===0)continue;

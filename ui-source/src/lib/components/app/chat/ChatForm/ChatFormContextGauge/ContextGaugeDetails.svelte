@@ -8,6 +8,9 @@
 	import { speculativeStats, kvCacheStats } from '$lib/utils/speculative-stats';
 	const speculation = $derived(speculativeStats(conversationsStore.activeMessages));
 	const kvStats = $derived(kvCacheStats(conversationsStore.activeMessages));
+	const latestTimings = $derived(conversationsStore.activeMessages.findLast(m=>m.role==='assistant'&&m.timings)?.timings);
+	const prefixStats = $derived(latestTimings?.prefix_cache);
+	const prefixSource:Record<string,string>={active:'当前 KV','gpu-prefix':'固定 GPU 前缀','disk-prefix':'本地快照恢复',miss:'首次计算'};
 
 	interface Props {
 		currentRead: number;
@@ -97,6 +100,10 @@
 
 				<div class="flex flex-col gap-2">
 					<ContextGaugeDetailRow label="KV cache hit rate" subtitle={`${kvStats.currentCached.toLocaleString()} / ${kvStats.currentTotal.toLocaleString()} prompt tok · 本次生成`} value={hitRate(kvStats.currentCached,kvStats.currentTotal)} />
+					{#if latestTimings?.ttft_ms!==undefined}<ContextGaugeDetailRow label="首字延迟 · TTFT" subtitle="从 Worker 受理请求到首个可见输出" value={`${latestTimings.ttft_ms.toFixed(1)} ms`} />{/if}
+					{#if prefixStats}
+						<ContextGaugeDetailRow label="系统前缀 KV" subtitle={prefixStats.enabled ? `${prefixSource[prefixStats.source]??prefixStats.source}${prefixStats.persisted?' · 已保存到本地':''}` : '固定前缀缓存已关闭'} value={`${prefixStats.reused_tokens.toLocaleString()} / ${prefixStats.system_tokens.toLocaleString()} tok`} />
+					{/if}
 					{#if currentRead > 0}
 						<ContextGaugeDetailRow
 							label="Prompt"

@@ -428,6 +428,8 @@ class AgenticStore {
 		return {
 			agentic: agenticTimings,
 			ngram: capturedTimings?.ngram,
+			prefix_cache: capturedTimings?.prefix_cache,
+			ttft_ms: capturedTimings?.ttft_ms,
 			prompt_total_n: capturedTimings?.prompt_total_n,
 			cache_n: capturedTimings?.cache_n,
 			predicted_ms: capturedTimings?.predicted_ms,

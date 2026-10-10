@@ -70,6 +70,12 @@ export class Engine {
         }
     }
     /**
+     * @param {number} slot
+     */
+    drop_prefix(slot) {
+        wasm.engine_drop_prefix(this.__wbg_ptr, slot);
+    }
+    /**
      * @param {string} text
      * @returns {Uint32Array}
      */
@@ -83,6 +89,15 @@ export class Engine {
         var v2 = getArrayU32FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
         return v2;
+    }
+    /**
+     * Compact layer payloads; no capacity padding, conversation tokens or logits.
+     * @param {number} slot
+     * @returns {Promise<Uint8Array>}
+     */
+    export_prefix(slot) {
+        const ret = wasm.engine_export_prefix(this.__wbg_ptr, slot);
+        return ret;
     }
     /**
      * @returns {Promise<void>}
@@ -114,6 +129,20 @@ export class Engine {
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.engine_forward_all(this.__wbg_ptr, ptr0, len0, top_k);
         return ret;
+    }
+    /**
+     * @param {number} slot
+     * @param {number} tokens
+     * @param {number} bits
+     * @param {Uint8Array} bytes
+     */
+    import_prefix(slot, tokens, bits, bytes) {
+        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.engine_import_prefix(this.__wbg_ptr, slot, tokens, bits, ptr0, len0);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
     }
     /**
      * Real WebGPU pack and projection checks against a Rust scalar oracle.
@@ -192,6 +221,28 @@ export class Engine {
     }
     reset() {
         wasm.engine_reset(this.__wbg_ptr);
+    }
+    /**
+     * @param {number} slot
+     * @returns {number}
+     */
+    restore_prefix(slot) {
+        const ret = wasm.engine_restore_prefix(this.__wbg_ptr, slot);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0] >>> 0;
+    }
+    /**
+     * Pin only the validated, immutable initial system block, independently of chat KV.
+     * @param {number} slot
+     * @param {number} tokens
+     */
+    save_prefix(slot, tokens) {
+        const ret = wasm.engine_save_prefix(this.__wbg_ptr, slot, tokens);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
     }
     /**
      * @param {number} bits
@@ -922,18 +973,18 @@ function __wbg_get_imports() {
             arg0.writeBuffer(arg1, arg2, arg3, arg4, arg5);
         }, arguments); },
         __wbindgen_generic_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 309, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 316, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true_);
             return ret;
         },
         __wbindgen_generic_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 348, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 355, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_fddd185fc99cd29e___JsError___true_);
             return ret;
         },
         __wbindgen_generic_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 309, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__27);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 316, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__32);
             return ret;
         },
         __wbindgen_generic_0000000000000004: function(arg0) {
@@ -968,6 +1019,13 @@ function __wbg_get_imports() {
             const ret = v0;
             return ret;
         },
+        __wbindgen_generic_000000000000000a: function(arg0, arg1) {
+            var v0 = getArrayU8FromWasm0(arg0, arg1).slice();
+            wasm.__wbindgen_free(arg0, arg1 * 1, 1);
+            // Cast intrinsic for `Vector(U8) -> Externref`.
+            const ret = v0;
+            return ret;
+        },
         __wbindgen_init_externref_table: function() {
             const table = wasm.__wbindgen_externrefs;
             const offset = table.grow(4);
@@ -988,8 +1046,8 @@ function wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bin
     wasm.wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true_(arg0, arg1, arg2);
 }
 
-function wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__27(arg0, arg1, arg2) {
-    wasm.wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__27(arg0, arg1, arg2);
+function wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__32(arg0, arg1, arg2) {
+    wasm.wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue______true__32(arg0, arg1, arg2);
 }
 
 function wasm_bindgen_fddd185fc99cd29e___convert__closures_____invoke___wasm_bindgen_fddd185fc99cd29e___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_fddd185fc99cd29e___JsError___true_(arg0, arg1, arg2) {

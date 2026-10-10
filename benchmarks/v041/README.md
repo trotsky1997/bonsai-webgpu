@@ -2,6 +2,7 @@
 
 Machine: Apple M5 Pro, 48 GiB; Codex Chromium 155. Raw benchmark collection occurred before the final statistics instrumentation change described in RELEASE_0.4.md. `accepted` in these historical JSON rows counts reused candidate rows. The current runtime separately records `accepted` and `reused`.
 
+- `prefix-cache.json`: fixed system-prefix KV measurements, seven alternating cold/GPU-prefix pairs at 128K INT4; max 64 tokens, actual 43, greedy, n-gram off. Includes one Worker refresh/disk restore and exact real-GPU INT4/FP32 snapshot roundtrip checks. This collection occurred after the statistics changes; current counter definitions apply. See SYSTEM_PREFIX_CACHE.md.
 - `kv-benchmark.json`: alternating FP32/INT4 KV runs at 32K YaRN factor 4; one warm-up pair (`round=-1`) and seven measured pairs, 64 tokens, greedy, drafts off. Contains identical-token bilingual diagnostic targets and one 10260-token dense/sparse prompt pair. NLL comes from per-token full logits.
 - `ngram-benchmark.json`: INT4 KV, context 4096, minimum n-gram length 5 / maximum 8, draft length 4; temperature .5, top_k 20, top_p .85, seed 42; 64 tokens. One warm-up pair and seven alternating pairs for ordinary prose and repeated HTML. Token arrays permit exact equality checks.
 - `gpu-checks.json`: real WebGPU packing/error-bound, attention, reference, batch/growth and draft-row equality checks. The 128K case checks synthetic one-head attention, not full-model 128K inference.

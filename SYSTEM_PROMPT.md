@@ -39,3 +39,7 @@ You are Bonsai. Follow the user request exactly and answer in their language.
 - HTML：采用版选中了 `write`，但生成的计数器没有正常实现交互。采购组件仍出现截断。成功写文件之后仍有重复 write 的案例。
 
 这些是少量固定样例的观察，不能推导总体成功率。提示词和显式工具约束改善了部分行为；它们没有解决模型的所有代码生成、格式遵从和重复调用问题。
+
+## 固定前缀缓存
+
+初始 system 块及工具签名默认预热并保存 KV，跨会话、刷新复用；本次提示词正文未改变。见 [实现与 TTFT 配对测量](SYSTEM_PREFIX_CACHE.md)。

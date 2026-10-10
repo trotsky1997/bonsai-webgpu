@@ -1,0 +1,2565 @@
+{
+  "request": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "用中文解释什么是 KV cache。"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "bash",
+          "description": "Run shell commands in the persistent virtual /workspace. Supports ls, cat, grep, sed, awk, jq, pipes and redirects. No network, Python, Node, npm or native binaries.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "command"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read",
+          "description": "Read a workspace UTF-8 file. Inspect files before editing.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "offset": {
+                "type": "integer",
+                "description": "Starting line, 1-based"
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Maximum lines, default 100"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "write",
+          "description": "Create or replace a UTF-8 file. HTML files appear in the artifact panel. Use self-contained HTML, inline CSS/JS, no CDN.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "content"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "glob",
+          "description": "Find virtual workspace files by glob pattern (*, **, ?, character classes), e.g. **/*.html. Returns sorted paths. No host filesystem.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "pattern": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string",
+                "description": "Base directory, default /workspace"
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Maximum paths, default 200, max 1000"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "grep",
+          "description": "Search virtual file contents with a regular expression (or literal=true). Returns path:line:match. Recursive under path; optional glob filters files.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "pattern": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string",
+                "description": "File or directory, default /workspace"
+              },
+              "glob": {
+                "type": "string"
+              },
+              "ignore_case": {
+                "type": "boolean"
+              },
+              "literal": {
+                "type": "boolean"
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Maximum matching lines, default 100, max 200"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "edit",
+          "description": "Replace exactly one occurrence in a file. Read the file first.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "oldText": {
+                "type": "string"
+              },
+              "newText": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "oldText",
+              "newText"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "present_ui",
+          "description": "Display an interactive card in the chat. Always include type, title, summary and data. Choose only the data fields for your type: checklist/timeline use items; comparison uses columns+rows; chart uses kind+labels+series; parameters uses controls+outputs; diagram uses nodes+edges. Provide 2-6 real items. After success respond briefly without repeating the card.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "comparison",
+                  "checklist",
+                  "timeline",
+                  "chart",
+                  "parameters",
+                  "diagram"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "description": "Required card heading"
+              },
+              "summary": {
+                "type": "string",
+                "description": "Required text summary"
+              },
+              "id": {
+                "type": "string",
+                "description": "Optional ASCII id; usually omit"
+              },
+              "data": {
+                "type": "object",
+                "description": "REQUIRED. Fill the matching fields below with actual data.",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Short ASCII id, no spaces"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "group": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "date": {
+                          "type": "string"
+                        },
+                        "checked": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label"
+                      ]
+                    }
+                  },
+                  "columns": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "label"
+                      ]
+                    }
+                  },
+                  "rows": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Short ASCII id, no spaces"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "values": {
+                          "type": "object",
+                          "description": "Column key to string or number value"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "values"
+                      ]
+                    }
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "line",
+                      "bar",
+                      "pie"
+                    ]
+                  },
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "series": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Short ASCII id, no spaces"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "values": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "values"
+                      ]
+                    }
+                  },
+                  "controls": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Short ASCII id, no spaces"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "number",
+                            "slider",
+                            "select",
+                            "switch"
+                          ]
+                        },
+                        "min": {
+                          "type": "number"
+                        },
+                        "max": {
+                          "type": "number"
+                        },
+                        "step": {
+                          "type": "number"
+                        },
+                        "value": {
+                          "type": [
+                            "number",
+                            "boolean",
+                            "string"
+                          ]
+                        },
+                        "options": {
+                          "type": "array",
+                          "maxItems": 16,
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "kind"
+                      ]
+                    }
+                  },
+                  "outputs": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Short ASCII id, no spaces"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "unit": {
+                          "type": "string"
+                        },
+                        "expr": {
+                          "description": "Calculation AST: a number, {param:\"control_id\"}, or {op:\"add|sub|mul|div|if|range|map|sum|avg\",args:[expressions]}. Example {op:\"mul\",args:[{param:\"price\"},{param:\"count\"}]}. map binds {var:\"x\"}.",
+                          "type": [
+                            "number",
+                            "object",
+                            "array"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "expr"
+                      ]
+                    }
+                  },
+                  "chart": {
+                    "type": "object",
+                    "description": "Optional calculated chart {kind:\"line\",series:[{id,label,expr}]} where expr produces an array, e.g. {op:\"map\",args:[{op:\"range\",args:[1,12,1]},{op:\"mul\",args:[{var:\"x\"},{param:\"price\"}]}]}"
+                  },
+                  "nodes": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Short ASCII id, no spaces"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "x": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "y": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "description": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "x",
+                        "y"
+                      ]
+                    }
+                  },
+                  "edges": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string"
+                        },
+                        "to": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "type",
+              "title",
+              "summary",
+              "data"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "update_ui_state",
+          "description": "Update an existing card using its id and version. patch flat keys: selected; checked:item-id (boolean); visible:series-id (boolean); param:control-id. Same-field concurrent changes return a conflict.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "base_version": {
+                "type": "integer"
+              },
+              "patch": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "id",
+              "base_version",
+              "patch"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_datetime",
+          "description": "Return the current local date and time.",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    ],
+    "client_capabilities": [
+      "interactive-ui.v1"
+    ],
+    "max_tokens": 64,
+    "temperature": 0,
+    "ngram": false,
+    "prefill_attention": "flashprefill"
+  },
+  "configuration": {
+    "job_id": "prefix-speed-info",
+    "type": "info",
+    "id": 1001,
+    "runtime_version": "0.4.1",
+    "backend": "browser-webgpu",
+    "kernel": "signmag-exact-unrolled-g32",
+    "weight_bits": 1,
+    "activation_bits": 4,
+    "kv_bits": 4,
+    "context": 131072,
+    "batch": 8,
+    "adapter": "AdapterInfo { name: \"\", vendor: 0, device: 0, device_type: Other, driver: \"\", driver_info: \"\", backend: BrowserWebGpu }",
+    "load_ms": 252.02499997615814,
+    "load_stages": {
+      "wasm_ms": 15.929999977350235,
+      "tokenizer_ms": 0.005000025033950806,
+      "engine_ms": 139.1899999976158,
+      "upload_ms": 22.755000054836273,
+      "files": [
+        {
+          "path": "manifest.json",
+          "cached": true,
+          "cache_ms": 1.0550000071525574,
+          "read_ms": 0.23999997973442078,
+          "verify_cache_ms": 0.010000020265579224
+        },
+        {
+          "path": "tokenizer.bin",
+          "cached": true,
+          "cache_ms": 0.4599999785423279,
+          "read_ms": 5.550000011920929,
+          "verify_cache_ms": 0.009999990463256836
+        },
+        {
+          "path": "layer-00.bin",
+          "cached": true,
+          "cache_ms": 0.5049999952316284,
+          "read_ms": 11.810000002384186,
+          "verify_cache_ms": 0.004999995231628418
+        },
+        {
+          "path": "layer-01.bin",
+          "cached": true,
+          "cache_ms": 0.5649999976158142,
+          "read_ms": 11.985000014305115,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "base.bin",
+          "cached": true,
+          "cache_ms": 0.4650000035762787,
+          "read_ms": 151.8449999988079,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-02.bin",
+          "cached": true,
+          "cache_ms": 9.759999990463257,
+          "read_ms": 10.730000019073486,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-03.bin",
+          "cached": true,
+          "cache_ms": 3.7849999964237213,
+          "read_ms": 12.465000003576279,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-04.bin",
+          "cached": true,
+          "cache_ms": 2.0899999737739563,
+          "read_ms": 13.490000009536743,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-05.bin",
+          "cached": true,
+          "cache_ms": 2.780000001192093,
+          "read_ms": 7.485000014305115,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-06.bin",
+          "cached": true,
+          "cache_ms": 1.7950000166893005,
+          "read_ms": 9.180000007152557,
+          "verify_cache_ms": 0.004999995231628418
+        },
+        {
+          "path": "layer-07.bin",
+          "cached": true,
+          "cache_ms": 3.25,
+          "read_ms": 7.195000022649765,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-08.bin",
+          "cached": true,
+          "cache_ms": 2.439999997615814,
+          "read_ms": 6.965000003576279,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-09.bin",
+          "cached": true,
+          "cache_ms": 2.0250000059604645,
+          "read_ms": 7.424999982118607,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-10.bin",
+          "cached": true,
+          "cache_ms": 1.6899999976158142,
+          "read_ms": 7.965000003576279,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-11.bin",
+          "cached": true,
+          "cache_ms": 2.479999989271164,
+          "read_ms": 6.485000014305115,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-12.bin",
+          "cached": true,
+          "cache_ms": 1.9150000214576721,
+          "read_ms": 7.655000001192093,
+          "verify_cache_ms": 0.004999995231628418
+        },
+        {
+          "path": "layer-13.bin",
+          "cached": true,
+          "cache_ms": 1.2599999904632568,
+          "read_ms": 8.145000010728836,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-14.bin",
+          "cached": true,
+          "cache_ms": 3.064999997615814,
+          "read_ms": 6.569999992847443,
+          "verify_cache_ms": 0.004999995231628418
+        },
+        {
+          "path": "layer-16.bin",
+          "cached": true,
+          "cache_ms": 1.5149999856948853,
+          "read_ms": 7.1500000059604645,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-15.bin",
+          "cached": true,
+          "cache_ms": 1.8400000035762787,
+          "read_ms": 7.574999988079071,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-17.bin",
+          "cached": true,
+          "cache_ms": 2.649999976158142,
+          "read_ms": 7.980000019073486,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-18.bin",
+          "cached": true,
+          "cache_ms": 2.0450000166893005,
+          "read_ms": 8.719999998807907,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-19.bin",
+          "cached": true,
+          "cache_ms": 3.4849999845027924,
+          "read_ms": 7.075000017881393,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-20.bin",
+          "cached": true,
+          "cache_ms": 2,
+          "read_ms": 5.83500000834465,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-22.bin",
+          "cached": true,
+          "cache_ms": 0.7450000047683716,
+          "read_ms": 6.794999986886978,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-21.bin",
+          "cached": true,
+          "cache_ms": 1.3700000047683716,
+          "read_ms": 7.334999978542328,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-23.bin",
+          "cached": true,
+          "cache_ms": 0.949999988079071,
+          "read_ms": 6.110000014305115,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-24.bin",
+          "cached": true,
+          "cache_ms": 1.1749999821186066,
+          "read_ms": 6.935000002384186,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-25.bin",
+          "cached": true,
+          "cache_ms": 0.7400000095367432,
+          "read_ms": 7.615000009536743,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-26.bin",
+          "cached": true,
+          "cache_ms": 1.0699999928474426,
+          "read_ms": 6.680000007152557,
+          "verify_cache_ms": 0
+        },
+        {
+          "path": "layer-27.bin",
+          "cached": true,
+          "cache_ms": 1.3050000071525574,
+          "read_ms": 3.810000002384186,
+          "verify_cache_ms": 0
+        }
+      ]
+    },
+    "memory": {
+      "gpu_weights_bytes": 269230912,
+      "gpu_kv_bytes": 9175040,
+      "gpu_prefix_bytes": 0,
+      "gpu_scratch_bytes": 79171812,
+      "wasm_linear_bytes": 42729472,
+      "context": 131072,
+      "batch": 8,
+      "kv_capacity_tokens": 256,
+      "used_tokens": 0,
+      "kv_bits": 4,
+      "gpu_kv_full_context_bytes": 4697620480,
+      "yarn_factor": 16
+    },
+    "checkpoint_sha256": "1a311d069f600340421921d25fdf039aa9d1708079149d0a987e42d26250fb19",
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 1.0049999952316284
+  },
+  "rows": {
+    "prefix-speed-info": {
+      "job_id": "prefix-speed-info",
+      "type": "info",
+      "id": 1001,
+      "runtime_version": "0.4.1",
+      "backend": "browser-webgpu",
+      "kernel": "signmag-exact-unrolled-g32",
+      "weight_bits": 1,
+      "activation_bits": 4,
+      "kv_bits": 4,
+      "context": 131072,
+      "batch": 8,
+      "adapter": "AdapterInfo { name: \"\", vendor: 0, device: 0, device_type: Other, driver: \"\", driver_info: \"\", backend: BrowserWebGpu }",
+      "load_ms": 252.02499997615814,
+      "load_stages": {
+        "wasm_ms": 15.929999977350235,
+        "tokenizer_ms": 0.005000025033950806,
+        "engine_ms": 139.1899999976158,
+        "upload_ms": 22.755000054836273,
+        "files": [
+          {
+            "path": "manifest.json",
+            "cached": true,
+            "cache_ms": 1.0550000071525574,
+            "read_ms": 0.23999997973442078,
+            "verify_cache_ms": 0.010000020265579224
+          },
+          {
+            "path": "tokenizer.bin",
+            "cached": true,
+            "cache_ms": 0.4599999785423279,
+            "read_ms": 5.550000011920929,
+            "verify_cache_ms": 0.009999990463256836
+          },
+          {
+            "path": "layer-00.bin",
+            "cached": true,
+            "cache_ms": 0.5049999952316284,
+            "read_ms": 11.810000002384186,
+            "verify_cache_ms": 0.004999995231628418
+          },
+          {
+            "path": "layer-01.bin",
+            "cached": true,
+            "cache_ms": 0.5649999976158142,
+            "read_ms": 11.985000014305115,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "base.bin",
+            "cached": true,
+            "cache_ms": 0.4650000035762787,
+            "read_ms": 151.8449999988079,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-02.bin",
+            "cached": true,
+            "cache_ms": 9.759999990463257,
+            "read_ms": 10.730000019073486,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-03.bin",
+            "cached": true,
+            "cache_ms": 3.7849999964237213,
+            "read_ms": 12.465000003576279,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-04.bin",
+            "cached": true,
+            "cache_ms": 2.0899999737739563,
+            "read_ms": 13.490000009536743,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-05.bin",
+            "cached": true,
+            "cache_ms": 2.780000001192093,
+            "read_ms": 7.485000014305115,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-06.bin",
+            "cached": true,
+            "cache_ms": 1.7950000166893005,
+            "read_ms": 9.180000007152557,
+            "verify_cache_ms": 0.004999995231628418
+          },
+          {
+            "path": "layer-07.bin",
+            "cached": true,
+            "cache_ms": 3.25,
+            "read_ms": 7.195000022649765,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-08.bin",
+            "cached": true,
+            "cache_ms": 2.439999997615814,
+            "read_ms": 6.965000003576279,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-09.bin",
+            "cached": true,
+            "cache_ms": 2.0250000059604645,
+            "read_ms": 7.424999982118607,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-10.bin",
+            "cached": true,
+            "cache_ms": 1.6899999976158142,
+            "read_ms": 7.965000003576279,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-11.bin",
+            "cached": true,
+            "cache_ms": 2.479999989271164,
+            "read_ms": 6.485000014305115,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-12.bin",
+            "cached": true,
+            "cache_ms": 1.9150000214576721,
+            "read_ms": 7.655000001192093,
+            "verify_cache_ms": 0.004999995231628418
+          },
+          {
+            "path": "layer-13.bin",
+            "cached": true,
+            "cache_ms": 1.2599999904632568,
+            "read_ms": 8.145000010728836,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-14.bin",
+            "cached": true,
+            "cache_ms": 3.064999997615814,
+            "read_ms": 6.569999992847443,
+            "verify_cache_ms": 0.004999995231628418
+          },
+          {
+            "path": "layer-16.bin",
+            "cached": true,
+            "cache_ms": 1.5149999856948853,
+            "read_ms": 7.1500000059604645,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-15.bin",
+            "cached": true,
+            "cache_ms": 1.8400000035762787,
+            "read_ms": 7.574999988079071,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-17.bin",
+            "cached": true,
+            "cache_ms": 2.649999976158142,
+            "read_ms": 7.980000019073486,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-18.bin",
+            "cached": true,
+            "cache_ms": 2.0450000166893005,
+            "read_ms": 8.719999998807907,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-19.bin",
+            "cached": true,
+            "cache_ms": 3.4849999845027924,
+            "read_ms": 7.075000017881393,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-20.bin",
+            "cached": true,
+            "cache_ms": 2,
+            "read_ms": 5.83500000834465,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-22.bin",
+            "cached": true,
+            "cache_ms": 0.7450000047683716,
+            "read_ms": 6.794999986886978,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-21.bin",
+            "cached": true,
+            "cache_ms": 1.3700000047683716,
+            "read_ms": 7.334999978542328,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-23.bin",
+            "cached": true,
+            "cache_ms": 0.949999988079071,
+            "read_ms": 6.110000014305115,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-24.bin",
+            "cached": true,
+            "cache_ms": 1.1749999821186066,
+            "read_ms": 6.935000002384186,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-25.bin",
+            "cached": true,
+            "cache_ms": 0.7400000095367432,
+            "read_ms": 7.615000009536743,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-26.bin",
+            "cached": true,
+            "cache_ms": 1.0699999928474426,
+            "read_ms": 6.680000007152557,
+            "verify_cache_ms": 0
+          },
+          {
+            "path": "layer-27.bin",
+            "cached": true,
+            "cache_ms": 1.3050000071525574,
+            "read_ms": 3.810000002384186,
+            "verify_cache_ms": 0
+          }
+        ]
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 9175040,
+        "gpu_prefix_bytes": 0,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 42729472,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 256,
+        "used_tokens": 0,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "checkpoint_sha256": "1a311d069f600340421921d25fdf039aa9d1708079149d0a987e42d26250fb19",
+      "content": "",
+      "tool_calls": [],
+      "wall_ttft_ms": null,
+      "wall_ms": 1.0049999952316284
+    },
+    "prefix-speed-warm": {
+      "job_id": "prefix-speed-warm",
+      "type": "prefix-ready",
+      "id": 1003,
+      "tokens": 1216,
+      "source": "computed",
+      "persisted": true,
+      "ms": 3188.564999997616,
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1216,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "",
+      "tool_calls": [],
+      "wall_ttft_ms": null,
+      "wall_ms": 3188.905000001192
+    },
+    "prefix-speed-0-cold": {
+      "job_id": "prefix-speed-0-cold",
+      "type": "done",
+      "id": 1005,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 0,
+      "completion_tokens": 43,
+      "prefill_ms": 3108.964999973774,
+      "decode_ms": 663.5400000214577,
+      "ttft_ms": 3109.919999986887,
+      "prefix_cache": {
+        "enabled": false,
+        "system_tokens": 0,
+        "reused_tokens": 0,
+        "source": "miss",
+        "lookup_ms": 0.004999995231628418,
+        "restore_ms": 0,
+        "warm_wait_ms": 0,
+        "persisted": false
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.0599999725818634,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 3110.3799999952316,
+      "wall_ms": 3773.060000002384
+    },
+    "prefix-speed-0-pinned": {
+      "job_id": "prefix-speed-0-pinned",
+      "type": "done",
+      "id": 1007,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 1216,
+      "completion_tokens": 43,
+      "prefill_ms": 88.97499999403954,
+      "decode_ms": 625.2100000083447,
+      "ttft_ms": 89.0750000178814,
+      "prefix_cache": {
+        "enabled": true,
+        "system_tokens": 1216,
+        "reused_tokens": 1216,
+        "source": "gpu-prefix",
+        "lookup_ms": 0.625,
+        "restore_ms": 0.5100000202655792,
+        "warm_wait_ms": 0.004999995231628418,
+        "persisted": true
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.02499997615814209,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 89.19999998807907,
+      "wall_ms": 714.4050000011921
+    },
+    "prefix-speed-1-pinned": {
+      "job_id": "prefix-speed-1-pinned",
+      "type": "done",
+      "id": 1009,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 1216,
+      "completion_tokens": 43,
+      "prefill_ms": 89.07499998807907,
+      "decode_ms": 641.7700000107288,
+      "ttft_ms": 89.13499999046326,
+      "prefix_cache": {
+        "enabled": true,
+        "system_tokens": 1216,
+        "reused_tokens": 1216,
+        "source": "gpu-prefix",
+        "lookup_ms": 0.21000000834465027,
+        "restore_ms": 0.1599999964237213,
+        "warm_wait_ms": 0,
+        "persisted": true
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.034999966621398926,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 89.24500000476837,
+      "wall_ms": 731.0349999964237
+    },
+    "prefix-speed-1-cold": {
+      "job_id": "prefix-speed-1-cold",
+      "type": "done",
+      "id": 1011,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 0,
+      "completion_tokens": 43,
+      "prefill_ms": 3079.9650000035763,
+      "decode_ms": 652.5099999904633,
+      "ttft_ms": 3080.0799999833107,
+      "prefix_cache": {
+        "enabled": false,
+        "system_tokens": 0,
+        "reused_tokens": 0,
+        "source": "miss",
+        "lookup_ms": 0.004999995231628418,
+        "restore_ms": 0,
+        "warm_wait_ms": 0,
+        "persisted": false
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.03999999165534973,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 3080.2100000083447,
+      "wall_ms": 3732.6500000059605
+    },
+    "prefix-speed-2-cold": {
+      "job_id": "prefix-speed-2-cold",
+      "type": "done",
+      "id": 1013,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 0,
+      "completion_tokens": 43,
+      "prefill_ms": 3134.2400000095367,
+      "decode_ms": 679.2399999797344,
+      "ttft_ms": 3134.294999986887,
+      "prefix_cache": {
+        "enabled": false,
+        "system_tokens": 0,
+        "reused_tokens": 0,
+        "source": "miss",
+        "lookup_ms": 0,
+        "restore_ms": 0,
+        "warm_wait_ms": 0,
+        "persisted": false
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.04999998211860657,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 3134.4099999964237,
+      "wall_ms": 3813.689999997616
+    },
+    "prefix-speed-2-pinned": {
+      "job_id": "prefix-speed-2-pinned",
+      "type": "done",
+      "id": 1015,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 1216,
+      "completion_tokens": 43,
+      "prefill_ms": 85.0949999988079,
+      "decode_ms": 660.3199999928474,
+      "ttft_ms": 85.16499999165535,
+      "prefix_cache": {
+        "enabled": true,
+        "system_tokens": 1216,
+        "reused_tokens": 1216,
+        "source": "gpu-prefix",
+        "lookup_ms": 0.2199999988079071,
+        "restore_ms": 0.18000000715255737,
+        "warm_wait_ms": 0,
+        "persisted": true
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.030000001192092896,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 85.32000002264977,
+      "wall_ms": 745.6150000095367
+    },
+    "prefix-speed-3-pinned": {
+      "job_id": "prefix-speed-3-pinned",
+      "type": "done",
+      "id": 1017,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 1216,
+      "completion_tokens": 43,
+      "prefill_ms": 90.33500000834465,
+      "decode_ms": 636.0300000011921,
+      "ttft_ms": 90.39000001549721,
+      "prefix_cache": {
+        "enabled": true,
+        "system_tokens": 1216,
+        "reused_tokens": 1216,
+        "source": "gpu-prefix",
+        "lookup_ms": 0.42500001192092896,
+        "restore_ms": 0.3499999940395355,
+        "warm_wait_ms": 0,
+        "persisted": true
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.034999966621398926,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 90.53500002622604,
+      "wall_ms": 726.6100000143051
+    },
+    "prefix-speed-3-cold": {
+      "job_id": "prefix-speed-3-cold",
+      "type": "done",
+      "id": 1019,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 0,
+      "completion_tokens": 43,
+      "prefill_ms": 3099.6800000071526,
+      "decode_ms": 647.3650000095367,
+      "ttft_ms": 3099.7600000202656,
+      "prefix_cache": {
+        "enabled": false,
+        "system_tokens": 0,
+        "reused_tokens": 0,
+        "source": "miss",
+        "lookup_ms": 0.010000020265579224,
+        "restore_ms": 0,
+        "warm_wait_ms": 0.004999995231628418,
+        "persisted": false
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.009999990463256836,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 3099.880000025034,
+      "wall_ms": 3747.2100000083447
+    },
+    "prefix-speed-4-cold": {
+      "job_id": "prefix-speed-4-cold",
+      "type": "done",
+      "id": 1021,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 0,
+      "completion_tokens": 43,
+      "prefill_ms": 3103.360000014305,
+      "decode_ms": 645.1399999856949,
+      "ttft_ms": 3103.4200000166893,
+      "prefix_cache": {
+        "enabled": false,
+        "system_tokens": 0,
+        "reused_tokens": 0,
+        "source": "miss",
+        "lookup_ms": 0,
+        "restore_ms": 0,
+        "warm_wait_ms": 0,
+        "persisted": false
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.04499995708465576,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 3103.5450000166893,
+      "wall_ms": 3748.6949999928474
+    },
+    "prefix-speed-4-pinned": {
+      "job_id": "prefix-speed-4-pinned",
+      "type": "done",
+      "id": 1023,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 1216,
+      "completion_tokens": 43,
+      "prefill_ms": 83.9699999988079,
+      "decode_ms": 595.1200000047684,
+      "ttft_ms": 84.02500000596046,
+      "prefix_cache": {
+        "enabled": true,
+        "system_tokens": 1216,
+        "reused_tokens": 1216,
+        "source": "gpu-prefix",
+        "lookup_ms": 0.16999998688697815,
+        "restore_ms": 0.125,
+        "warm_wait_ms": 0,
+        "persisted": true
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.019999980926513672,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 84.125,
+      "wall_ms": 679.2400000095367
+    },
+    "prefix-speed-5-pinned": {
+      "job_id": "prefix-speed-5-pinned",
+      "type": "done",
+      "id": 1025,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 1216,
+      "completion_tokens": 43,
+      "prefill_ms": 88.7800000011921,
+      "decode_ms": 622.3000000119209,
+      "ttft_ms": 88.81999999284744,
+      "prefix_cache": {
+        "enabled": true,
+        "system_tokens": 1216,
+        "reused_tokens": 1216,
+        "source": "gpu-prefix",
+        "lookup_ms": 0.1550000011920929,
+        "restore_ms": 0.125,
+        "warm_wait_ms": 0,
+        "persisted": true
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.04000002145767212,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 88.9249999821186,
+      "wall_ms": 711.2749999761581
+    },
+    "prefix-speed-5-cold": {
+      "job_id": "prefix-speed-5-cold",
+      "type": "done",
+      "id": 1027,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 0,
+      "completion_tokens": 43,
+      "prefill_ms": 3109.7900000214577,
+      "decode_ms": 695.1799999773502,
+      "ttft_ms": 3109.8700000047684,
+      "prefix_cache": {
+        "enabled": false,
+        "system_tokens": 0,
+        "reused_tokens": 0,
+        "source": "miss",
+        "lookup_ms": 0,
+        "restore_ms": 0,
+        "warm_wait_ms": 0,
+        "persisted": false
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.034999966621398926,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 3110.0250000059605,
+      "wall_ms": 3805.1649999916553
+    },
+    "prefix-speed-6-cold": {
+      "job_id": "prefix-speed-6-cold",
+      "type": "done",
+      "id": 1029,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 0,
+      "completion_tokens": 43,
+      "prefill_ms": 3134.9299999773502,
+      "decode_ms": 656.4150000214577,
+      "ttft_ms": 3134.979999989271,
+      "prefix_cache": {
+        "enabled": false,
+        "system_tokens": 0,
+        "reused_tokens": 0,
+        "source": "miss",
+        "lookup_ms": 0.004999995231628418,
+        "restore_ms": 0,
+        "warm_wait_ms": 0,
+        "persisted": false
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.045000046491622925,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 3135.1150000095367,
+      "wall_ms": 3791.530000001192
+    },
+    "prefix-speed-6-pinned": {
+      "job_id": "prefix-speed-6-pinned",
+      "type": "done",
+      "id": 1031,
+      "finish_reason": "stop",
+      "prompt_tokens": 1240,
+      "cached_tokens": 1216,
+      "completion_tokens": 43,
+      "prefill_ms": 84.62999999523163,
+      "decode_ms": 617.6750000119209,
+      "ttft_ms": 84.66499999165535,
+      "prefix_cache": {
+        "enabled": true,
+        "system_tokens": 1216,
+        "reused_tokens": 1216,
+        "source": "gpu-prefix",
+        "lookup_ms": 0.1900000274181366,
+        "restore_ms": 0.14499998092651367,
+        "warm_wait_ms": 0,
+        "persisted": true
+      },
+      "tokens": [
+        82707,
+        6500,
+        54851,
+        46944,
+        99982,
+        24360,
+        100674,
+        3837,
+        100751,
+        101098,
+        29490,
+        104925,
+        33108,
+        50007,
+        20074,
+        1773,
+        39165,
+        20002,
+        104925,
+        46944,
+        85329,
+        13343,
+        3837,
+        72448,
+        36993,
+        101071,
+        110857,
+        99982,
+        24360,
+        3837,
+        62244,
+        47606,
+        80158,
+        31526,
+        3837,
+        62244,
+        69184,
+        80158,
+        69041,
+        89047,
+        72017,
+        34859,
+        1773
+      ],
+      "tool_json_repairs": 0,
+      "ngram": {
+        "enabled": false,
+        "proposed": 0,
+        "accepted": 0,
+        "reused": 0,
+        "batches": 0,
+        "forward_calls": 43,
+        "lookup_ms": 0.014999985694885254,
+        "disabled_for_low_acceptance": false
+      },
+      "memory": {
+        "gpu_weights_bytes": 269230912,
+        "gpu_kv_bytes": 73400320,
+        "gpu_prefix_bytes": 43581440,
+        "gpu_scratch_bytes": 79171812,
+        "wasm_linear_bytes": 130023424,
+        "context": 131072,
+        "batch": 8,
+        "kv_capacity_tokens": 2048,
+        "used_tokens": 1283,
+        "kv_bits": 4,
+        "gpu_kv_full_context_bytes": 4697620480,
+        "yarn_factor": 16
+      },
+      "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+      "tool_calls": [],
+      "wall_ttft_ms": 84.76999998092651,
+      "wall_ms": 702.4849999845028
+    }
+  },
+  "summary": {
+    "cold": {
+      "ttft_median_ms": 3109.8700000047684,
+      "ttft_range_ms": [
+        3080.0799999833107,
+        3134.979999989271
+      ]
+    },
+    "pinned": {
+      "ttft_median_ms": 88.81999999284744,
+      "ttft_range_ms": [
+        84.02500000596046,
+        90.39000001549721
+      ]
+    },
+    "exact_output_pairs": 7
+  },
+  "disk_refresh": {
+    "job_id": "prefix-disk-refresh",
+    "type": "done",
+    "id": 1002,
+    "finish_reason": "stop",
+    "prompt_tokens": 1240,
+    "cached_tokens": 1216,
+    "completion_tokens": 43,
+    "prefill_ms": 172.58499997854233,
+    "decode_ms": 711.1500000059605,
+    "ttft_ms": 173.4249999821186,
+    "prefix_cache": {
+      "enabled": true,
+      "system_tokens": 1216,
+      "reused_tokens": 1216,
+      "source": "disk-prefix",
+      "lookup_ms": 55.92500001192093,
+      "restore_ms": 0.6050000190734863,
+      "warm_wait_ms": 0,
+      "persisted": true
+    },
+    "tokens": [
+      82707,
+      6500,
+      54851,
+      46944,
+      99982,
+      24360,
+      100674,
+      3837,
+      100751,
+      101098,
+      29490,
+      104925,
+      33108,
+      50007,
+      20074,
+      1773,
+      39165,
+      20002,
+      104925,
+      46944,
+      85329,
+      13343,
+      3837,
+      72448,
+      36993,
+      101071,
+      110857,
+      99982,
+      24360,
+      3837,
+      62244,
+      47606,
+      80158,
+      31526,
+      3837,
+      62244,
+      69184,
+      80158,
+      69041,
+      89047,
+      72017,
+      34859,
+      1773
+    ],
+    "tool_json_repairs": 0,
+    "ngram": {
+      "enabled": false,
+      "proposed": 0,
+      "accepted": 0,
+      "reused": 0,
+      "batches": 0,
+      "forward_calls": 43,
+      "lookup_ms": 0.03999999165534973,
+      "disabled_for_low_acceptance": false
+    },
+    "memory": {
+      "gpu_weights_bytes": 269230912,
+      "gpu_kv_bytes": 91750400,
+      "gpu_prefix_bytes": 43581440,
+      "gpu_scratch_bytes": 79171812,
+      "wasm_linear_bytes": 86376448,
+      "context": 131072,
+      "batch": 8,
+      "kv_capacity_tokens": 2560,
+      "used_tokens": 1283,
+      "kv_bits": 4,
+      "gpu_kv_full_context_bytes": 4697620480,
+      "yarn_factor": 16
+    },
+    "content": "KV cache 是一个缓存机制，用于快速地访问和更新数据。当用户访问一个资源时，系统会检查现有的缓存，如果存在就返回，如果不存在就向服务器发送请求。",
+    "tool_calls": [],
+    "wall_ttft_ms": 174.70999997854233,
+    "wall_ms": 885.169999986887
+  },
+  "gpu_roundtrip": {
+    "job_id": "prefix-gpu-roundtrip",
+    "type": "checked",
+    "id": 1001,
+    "result": [
+      {
+        "bits": 4,
+        "prefix_tokens": 128,
+        "total_tokens": 304,
+        "bytes": 4587520,
+        "gpu_logits_exact": true,
+        "disk_logits_exact": true,
+        "payload_exact": true
+      },
+      {
+        "bits": 32,
+        "prefix_tokens": 128,
+        "total_tokens": 304,
+        "bytes": 29360128,
+        "gpu_logits_exact": true,
+        "disk_logits_exact": true,
+        "payload_exact": true
+      }
+    ],
+    "content": "",
+    "tool_calls": [],
+    "wall_ttft_ms": null,
+    "wall_ms": 2380.0699999928474
+  },
+  "methodology": "Apple M5 Pro, Chromium, context 131072, KV INT4 g32, greedy, ngram disabled. Seven alternating pairs, active KV reset before each generation. Cold disables pinned prefix cache; pinned restores the same 1216-token system prefix. max_tokens=64, actual completions=43. Disk refresh is one first-generation sample after reloading Worker; model load time is excluded from TTFT."
+}

@@ -366,7 +366,9 @@ export interface ApiChatCompletionStreamChunk {
 		finish_reason?: string | null;
 	}>;
 	timings?: {
+		ttft_ms?: number;
 		prompt_total_n?: number;
+		prefix_cache?: {enabled:boolean;system_tokens:number;reused_tokens:number;source:string;lookup_ms:number;restore_ms:number;warm_wait_ms:number;persisted:boolean};
 		ngram?: import('./chat').ChatMessageNgramStats;
 		prompt_n?: number;
 		prompt_ms?: number;

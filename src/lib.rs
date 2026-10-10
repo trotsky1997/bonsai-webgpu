@@ -86,10 +86,16 @@ struct Layer {
     vectors: HashMap<String, wgpu::Buffer>,
     kv: wgpu::Buffer,
 }
+struct KvPrefix {
+    tokens: u32,
+    bits: u32,
+    layers: Vec<wgpu::Buffer>,
+}
 #[derive(Serialize)]
 struct Memory {
     gpu_weights_bytes: u64,
     gpu_kv_bytes: u64,
+    gpu_prefix_bytes: u64,
     gpu_scratch_bytes: u64,
     wasm_linear_bytes: u64,
     context: u32,
@@ -117,6 +123,7 @@ pub struct Engine {
     capacity: u32,
     kv_capacity: u32,
     kv_bits: u32,
+    prefixes: HashMap<u32, KvPrefix>,
     short_attention: u32,
     force_tiled: bool,
     sparse_prefill: bool,
@@ -134,6 +141,31 @@ pub struct Engine {
 }
 
 impl Engine {
+    fn ensure_kv_capacity(&mut self, needed: u32) -> Result<()> {
+        if needed>self.capacity {return Err(err("KV capacity exceeded"));}
+        if needed<=self.kv_capacity {return Ok(());}
+        let next=(self.kv_capacity*2).max((needed+255)/256*256).min(self.capacity);
+        let width=if self.kv_bits==4 {160u32}else{1024u32};
+        let mut encoder=self.device.create_command_encoder(&Default::default());
+        let new_size=next as u64*width as u64*4;
+        let mut growth=Vec::new();
+        for l in &self.layers {
+            let kv=self.buffer("grown KV",new_size*2,wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_SRC|wgpu::BufferUsages::COPY_DST);
+            let groups=(self.kv_capacity*width*2+255)/256;
+            let d=self.dispatch("kv_grow",&[&l.kv,&kv],[groups.min(65535),(groups+65534)/65535,1],[self.kv_capacity,next,if self.kv_bits==4 {5}else{1},width]);
+            growth.push((kv,d));
+        }
+        {let mut pass=encoder.begin_compute_pass(&Default::default());
+         for (_,d) in &growth {pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],d.dims[1],1);}}
+        self.queue.submit(Some(encoder.finish()));
+        for(l,(kv,_))in self.layers.iter_mut().zip(growth){l.kv=kv;}
+        self.kv_capacity=next;self.kv_bytes=new_size*2*self.layers.len() as u64;self.graphs.clear();Ok(())
+    }
+    fn prefix_size(&self,tokens:u32)->u64 {tokens as u64*self.layers.len() as u64*if self.kv_bits==4 {1280}else{8192}}
+    fn check_prefix(&self,slot:u32,tokens:u32)->Result<()> {
+        if slot>=2||tokens==0||tokens>2048||tokens>self.capacity||self.layers.len()!=28||self.prefix_size(tokens)>64*1024*1024 {return Err(err("invalid or oversized system prefix"));}
+        Ok(())
+    }
     async fn read_buffer(&self, buffer: &wgpu::Buffer, size: u64) -> Result<Vec<u32>> {
         let mut encoder = self.device.create_command_encoder(&Default::default());
         encoder.copy_buffer_to_buffer(buffer, 0, &self.buffers["readback"], 0, size);
@@ -373,33 +405,7 @@ impl Engine {
         if self.layers.len() != 28 {
             return Err(err("model is not loaded"));
         }
-        if self.pos + b > self.kv_capacity {
-            let next = (self.kv_capacity*2).max((self.pos+b+255)/256*256).min(self.capacity);
-            let width=if self.kv_bits==4 {160u32}else{1024u32};
-            let mut encoder = self.device.create_command_encoder(&Default::default());
-            let new_size = next as u64 * width as u64 * 4;
-            let mut growth=Vec::new();
-            for l in &self.layers {
-                let kv = self.device.create_buffer(&wgpu::BufferDescriptor {
-                    label: Some("grown quantized KV"),
-                    size: new_size * 2,
-                    usage: wgpu::BufferUsages::STORAGE
-                        | wgpu::BufferUsages::COPY_SRC
-                        | wgpu::BufferUsages::COPY_DST,
-                    mapped_at_creation: false,
-                });
-                let groups=(self.kv_capacity*width*2+255)/256;
-                let dispatch=self.dispatch("kv_grow",&[&l.kv,&kv],[groups.min(65535),(groups+65534)/65535,1],[self.kv_capacity,next,if self.kv_bits==4 {5}else{1},width]);
-                growth.push((kv,dispatch));
-            }
-            {let mut pass=encoder.begin_compute_pass(&Default::default());
-             for (_,d) in &growth {pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],d.dims[1],1);}}
-            self.queue.submit(Some(encoder.finish()));
-            for (l,(kv,_)) in self.layers.iter_mut().zip(growth) {l.kv=kv;}
-            self.kv_capacity = next;
-            self.kv_bytes = new_size * 2 * 28;
-            self.graphs.clear();
-        }
+        self.ensure_kv_capacity(self.pos+b)?;
         let sparse=self.sparse_prefill&&self.kv_bits==4&&b>1&&self.pos>=8192&&self.pos/128+2<(self.prefill_end+127)/128;
         let graph_key=b+if sparse {512}else{0}+if all{256}else{0}+if self.force_tiled||self.pos+b>self.short_attention {((self.pos+b+127)/128)*1024}else{0};
         // A tiled graph depends on the active split count. Keep only the current
@@ -513,7 +519,7 @@ impl Engine {
             uniforms: RefCell::new(HashMap::new()),
             capacity,
             kv_capacity: capacity.min(256),
-            kv_bits,short_attention,force_tiled:false,sparse_prefill:false,prefill_end:0,sparse_alpha:0.1,
+            kv_bits,prefixes:HashMap::new(),short_attention,force_tiled:false,sparse_prefill:false,prefill_end:0,sparse_alpha:0.1,
             batch,
             pos: 0,
             weights_bytes: 0,
@@ -544,6 +550,7 @@ impl Engine {
             ("norm_add",include_str!("norm_add.wgsl")),
             ("silu_pack",include_str!("silu_pack.wgsl")),
             ("kv_grow",include_str!("kv_grow.wgsl")),
+            ("kv_copy",include_str!("kv_copy.wgsl")),
             ("attention_pack",include_str!("attention_pack.wgsl")),
             ("rope_q4",include_str!("rope_q4.wgsl")),
             ("attention_q4",include_str!("attention_q4.wgsl")),
@@ -739,7 +746,7 @@ impl Engine {
         if !matches!(bits,4|32){return Err(err("kv_bits must be 4 or 32"));}
         let full=self.capacity as u64*if bits==4 {1280}else{8192};
         if full>self.device.limits().max_storage_buffer_binding_size as u64{return Err(err("reload the engine with this KV precision"));}
-        self.kv_bits=bits;self.pos=0;self.kv_capacity=self.capacity.min(256);self.graphs.clear();
+        self.prefixes.clear();self.kv_bits=bits;self.pos=0;self.kv_capacity=self.capacity.min(256);self.graphs.clear();
         let size=self.kv_capacity as u64*if bits==4 {1280}else{8192};
         let fresh:Vec<_>=(0..self.layers.len()).map(|_|self.buffer("changed KV precision",size,wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_SRC|wgpu::BufferUsages::COPY_DST)).collect();
         for(l,kv)in self.layers.iter_mut().zip(fresh){l.kv=kv;}self.kv_bytes=size*self.layers.len() as u64;Ok(())
@@ -749,6 +756,50 @@ impl Engine {
         self.prefill_end=end;self.sparse_prefill=sparse;self.sparse_alpha=alpha;self.graphs.clear();Ok(())
     }
     pub fn set_tiled_attention(&mut self, force:bool){self.force_tiled=force;self.graphs.clear();}
+    /// Pin only the validated, immutable initial system block, independently of chat KV.
+    pub fn save_prefix(&mut self,slot:u32,tokens:u32)->Result<()> {
+        self.check_prefix(slot,tokens)?;
+        if tokens>self.pos {return Err(err("system prefix has not been computed"));}
+        let group=if self.kv_bits==4 {5}else{1};let width=if self.kv_bits==4 {160}else{1024};
+        let size=tokens as u64*width as u64*8;
+        let layers:Vec<_>=self.layers.iter().map(|_|self.buffer("pinned system KV",size,wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_SRC|wgpu::BufferUsages::COPY_DST)).collect();
+        let copies:Vec<_>=self.layers.iter().zip(&layers).map(|(l,b)|self.dispatch("kv_copy",&[&l.kv,b],[(tokens*width*2+255)/256,1,1],[self.kv_capacity,tokens,tokens,group])).collect();
+        let mut encoder=self.device.create_command_encoder(&Default::default());
+        {let mut pass=encoder.begin_compute_pass(&Default::default());for d in &copies{pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],1,1);}}
+        self.queue.submit(Some(encoder.finish()));
+        self.prefixes.insert(slot,KvPrefix{tokens,bits:self.kv_bits,layers});Ok(())
+    }
+    pub fn restore_prefix(&mut self,slot:u32)->Result<u32> {
+        let prefix=self.prefixes.get(&slot).ok_or_else(||err("unknown system prefix"))?;
+        if prefix.bits!=self.kv_bits {return Err(err("prefix KV precision changed"));}
+        let tokens=prefix.tokens;self.ensure_kv_capacity(tokens)?;
+        let prefix=&self.prefixes[&slot];let group=if self.kv_bits==4 {5}else{1};let width=if self.kv_bits==4 {160}else{1024};
+        let copies:Vec<_>=prefix.layers.iter().zip(&self.layers).map(|(b,l)|self.dispatch("kv_copy",&[b,&l.kv],[(tokens*width*2+255)/256,1,1],[tokens,self.kv_capacity,tokens,group])).collect();
+        let mut encoder=self.device.create_command_encoder(&Default::default());
+        {let mut pass=encoder.begin_compute_pass(&Default::default());for d in &copies{pass.set_pipeline(&d.handle);pass.set_bind_group(0,&d.group,&[]);pass.dispatch_workgroups(d.dims[0],1,1);}}
+        self.queue.submit(Some(encoder.finish()));self.pos=tokens;Ok(tokens)
+    }
+    pub fn drop_prefix(&mut self,slot:u32){self.prefixes.remove(&slot);}
+    /// Compact layer payloads; no capacity padding, conversation tokens or logits.
+    pub async fn export_prefix(&self,slot:u32)->Result<Vec<u8>> {
+        let prefix=self.prefixes.get(&slot).ok_or_else(||err("unknown system prefix"))?;
+        let layer_size=prefix.tokens as u64*if prefix.bits==4 {1280}else{8192};
+        let size=layer_size*prefix.layers.len() as u64;
+        let staging=self.buffer("system KV readback",size,wgpu::BufferUsages::COPY_DST|wgpu::BufferUsages::MAP_READ);
+        let mut encoder=self.device.create_command_encoder(&Default::default());
+        for(i,b)in prefix.layers.iter().enumerate(){encoder.copy_buffer_to_buffer(b,0,&staging,i as u64*layer_size,layer_size);}
+        self.queue.submit(Some(encoder.finish()));
+        let(tx,rx)=futures_channel::oneshot::channel();staging.slice(..).map_async(wgpu::MapMode::Read,move|r|{let _=tx.send(r);});
+        rx.await.map_err(err)?.map_err(err)?;
+        let bytes=staging.slice(..).get_mapped_range().to_vec();staging.unmap();Ok(bytes)
+    }
+    pub fn import_prefix(&mut self,slot:u32,tokens:u32,bits:u32,bytes:Vec<u8>)->Result<()> {
+        self.check_prefix(slot,tokens)?;
+        if bits!=self.kv_bits||bytes.len() as u64!=self.prefix_size(tokens){return Err(err("invalid system KV payload"));}
+        let size=bytes.len()/self.layers.len();
+        let layers=bytes.chunks_exact(size).map(|chunk|self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor{label:Some("restored system KV"),contents:chunk,usage:wgpu::BufferUsages::STORAGE|wgpu::BufferUsages::COPY_SRC|wgpu::BufferUsages::COPY_DST})).collect();
+        self.prefixes.insert(slot,KvPrefix{tokens,bits,layers});Ok(())
+    }
     pub fn reset(&mut self) {
         self.pos = 0;
     }
@@ -768,6 +819,7 @@ impl Engine {
         serde_wasm_bindgen::to_value(&Memory {
             gpu_weights_bytes: self.weights_bytes,
             gpu_kv_bytes: self.kv_bytes,
+            gpu_prefix_bytes:self.prefixes.values().map(|p|self.prefix_size(p.tokens)).sum(),
             gpu_scratch_bytes: self.scratch_bytes,
             wasm_linear_bytes: bytes,
             context: self.capacity,

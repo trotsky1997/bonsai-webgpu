@@ -19,7 +19,7 @@ function command(op,args={}){
   if(event.type==='error'){listeners.delete(id);reject(Error(event.message));}
   if(event.type==='tool_calls')tool_calls=event.tool_calls;
   if(event.type==='delta'){content+=event.text;if(first===null)first=performance.now()-start;}
-  if(['done','reset','diagnosed','info','traced','checked'].includes(event.type)){listeners.delete(id);resolve({...event,content,tool_calls,wall_ttft_ms:first,wall_ms:performance.now()-start});}
+  if(['done','reset','diagnosed','info','traced','checked','prefix-ready'].includes(event.type)){listeners.delete(id);resolve({...event,content,tool_calls,wall_ttft_ms:first,wall_ms:performance.now()-start});}
  });worker.postMessage({op,id,...args});});
 }
 async function run(job){
@@ -49,6 +49,8 @@ async function run(job){
  else if(job.op==='candidate-check')result=await command('candidate-check');
  else if(job.op==='tokenize-check')result=await command('tokenize-check',{texts:job.texts});
  else if(job.op==='batch-check')result=await command('batch-check',{text:job.text,limit:job.limit});
+ else if(job.op==='prefix-check')result=await command('prefix-check');
+ else if(job.op==='warm-prefix'){await command('reset');result=await command('warm-prefix',{body:job.body});}
  else throw Error('Unknown benchmark op');
  const out={job_id:job.job_id,...result};
  append(JSON.stringify({...out,result:out.result?.tokens?{mean_nll:out.result.mean_nll,tokens:out.result.tokens.length}:undefined}));

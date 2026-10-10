@@ -1,7 +1,7 @@
 // OpenAI-shaped streaming transport, entirely within this browser tab.
 const nativeFetch=window.fetch.bind(window);
 const appBase=new URL('../',import.meta.url);
-const worker=new Worker(new URL('web/worker.mjs?v=0.4.1.1',appBase),{type:'module'});
+const worker=new Worker(new URL('web/worker.mjs?v=0.4.1.2',appBase),{type:'module'});
 let resolveReady,rejectReady,info,serial=0;
 const ready=new Promise((resolve,reject)=>{resolveReady=resolve;rejectReady=reject;});
 const listeners=new Map();
@@ -24,12 +24,21 @@ function loadFailed(message){
 worker.onmessage=({data})=>{
  if(data.type==='loading'){overlay.querySelector('#bonsai-status').textContent=data.message;overlay.querySelector('progress').value=data.percent;}
  else if(data.type==='ready'){info=data;window.bonsaiInfo=data;resolveReady(data);overlay.remove();}
+ else if(data.type==='prefix-ready'||data.type==='prefix-progress'){window.bonsaiPrefixInfo=data;window.dispatchEvent(new CustomEvent('bonsai-prefix-status',{detail:data}));}
  else if(data.type==='error'&&!data.id){loadFailed(data.message);console.error(data);}
  else listeners.get(data.id)?.(data);
 };
 worker.onerror=e=>loadFailed(e.message);
 let runtime={};try{runtime=JSON.parse(localStorage.getItem('bonsai-runtime')??'{}')??{};}catch{}
 worker.postMessage({op:'init',context:runtime.context??131072,kv_bits:runtime.kv_bits??4});
+let warmTimer,warmConfiguration='';
+window.addEventListener('bonsai-prefix-config',event=>{
+ if(runtime.prefix_cache===false)return;
+ const body={...event.detail,prefill_attention:runtime.prefill_attention??'flashprefill'};
+ const configuration=JSON.stringify(body);if(configuration===warmConfiguration)return;
+ warmConfiguration=configuration;clearTimeout(warmTimer);
+ warmTimer=setTimeout(async()=>{try{await ready;if(configuration===warmConfiguration&&!listeners.size)worker.postMessage({op:'warm-prefix',id:++serial,body});}catch{}},250);
+});
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
 function props(){return {role:'model',model_path:'Bonsai-1.7B-W1A4-WebGPU',total_slots:1,default_generation_settings:{id:0,n_ctx:info?.context??131072,is_processing:false,prompt:'',params:{temperature:0.5,top_k:20,top_p:0.85,min_p:0,max_tokens:1024,n_predict:1024,repeat_penalty:1,repeat_last_n:64,presence_penalty:0,frequency_penalty:0,seed:-1,stop:[],samplers:['top_k','top_p','temperature'],reasoning_format:'none'}},modalities:{vision:false,audio:false,video:false},chat_template:'',bos_token:'',eos_token:'<|im_end|>',build_info:'Bonsai Rust/WASM 0.4 · 浏览器 WebGPU · W1A4',ui_settings:{titleGenerationUseLLM:false,preEncodeConversation:false,showMessageStats:true,systemMessage:'',symbolicMathEnabled:false,jsSandboxEnabled:false},cors_proxy_enabled:false};}
 window.fetch=async(input,options={})=>{
@@ -42,7 +51,7 @@ window.fetch=async(input,options={})=>{
  if(path==='/health'){await ready;return json({...info,status:'ok'});}
  if(path==='/v1/stream'&&req.method==='DELETE'){worker.postMessage({op:'cancel'});return json({success:true});}
  if(path!=='/v1/chat/completions')return nativeFetch(req);
- await ready;const body=await req.json();body.prefill_attention??=runtime.prefill_attention??'flashprefill';if(body.n_predict===0)return json({choices:[]});
+ await ready;const body=await req.json();body.prefill_attention??=runtime.prefill_attention??'flashprefill';body.prefix_cache??=runtime.prefix_cache??true;if(body.n_predict===0)return json({choices:[]});
  const id=++serial,completionId='chatcmpl-'+crypto.randomUUID(),created=Math.floor(Date.now()/1000),encoder=new TextEncoder();
  const envelope=payload=>({id:completionId,object:'chat.completion.chunk',created,model:'Bonsai-1.7B-W1A4-WebGPU',...payload});
  let whole='',toolCalls=[];
@@ -55,7 +64,7 @@ window.fetch=async(input,options={})=>{
    else if(event.type==='progress')send({choices:[],prompt_progress:{total:event.prompt_tokens,cache:event.cached_tokens,processed:event.processed_tokens,time_ms:0}});
    else if(event.type==='done'){
     const usage={prompt_tokens:event.prompt_tokens,completion_tokens:event.completion_tokens,total_tokens:event.prompt_tokens+event.completion_tokens};
-    const timings={prompt_n:event.prompt_tokens-event.cached_tokens,prompt_total_n:event.prompt_tokens,prompt_ms:event.prefill_ms,prompt_per_second:(event.prompt_tokens-event.cached_tokens)*1000/Math.max(event.prefill_ms,1),cache_n:event.cached_tokens,predicted_n:event.completion_tokens,predicted_ms:event.decode_ms,predicted_per_second:Math.max(0,event.completion_tokens-1)*1000/Math.max(event.decode_ms,1),ttft_ms:event.ttft_ms,ngram:event.ngram,tool_json_repairs:event.tool_json_repairs};
+    const timings={prompt_n:event.prompt_tokens-event.cached_tokens,prompt_total_n:event.prompt_tokens,prompt_ms:event.prefill_ms,prompt_per_second:(event.prompt_tokens-event.cached_tokens)*1000/Math.max(event.prefill_ms,1),cache_n:event.cached_tokens,predicted_n:event.completion_tokens,predicted_ms:event.decode_ms,predicted_per_second:Math.max(0,event.completion_tokens-1)*1000/Math.max(event.decode_ms,1),ttft_ms:event.ttft_ms,ngram:event.ngram,prefix_cache:event.prefix_cache,tool_json_repairs:event.tool_json_repairs};
     send({choices:[{index:0,delta:{},finish_reason:event.finish_reason}],usage,timings});controller.enqueue(encoder.encode('data: [DONE]\n\n'));controller.close();listeners.delete(id);
    }else if(event.type==='error'){send({error:{message:event.message}});controller.enqueue(encoder.encode('data: [DONE]\n\n'));controller.close();listeners.delete(id);}
   });
