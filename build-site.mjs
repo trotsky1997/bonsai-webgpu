@@ -14,7 +14,7 @@ await cp(join(root,'ui'),destination,{recursive:true});
 await cp(join(root,'web'),join(destination,'web'),{recursive:true,filter:path=>!path.endsWith('bench.html')&&!path.endsWith('bench.mjs')});
 await cp(join(root,'model'),join(destination,'model'),{recursive:true,filter:path=>!path.endsWith('tokenizer.json')});
 const immutable=join(root,'ui/_app/immutable');
-const assets=(await readdir(immutable,{recursive:true,withFileTypes:true})).filter(e=>e.isFile()).map(e=>join(e.parentPath,e.name).slice(join(root,'ui').length+1));
+const assets=(await readdir(immutable,{recursive:true,withFileTypes:true})).filter(e=>e.isFile()).map(e=>join(e.parentPath,e.name).slice(join(root,'ui').length+1)).sort();
 if(assets.length<2)throw Error('Missing UI bundle assets');
 await writeFile(join(destination,'sw.js'),(await readFile(join(root,'web/sw.js'),'utf8')).replace('/* UI_ASSETS */',assets.map(a=>JSON.stringify(a)).join(',')));
 for(const name of ['LICENSE','MODEL_LICENSE','LLAMA_CPP_LICENSE'])await cp(join(root,name),join(destination,name));

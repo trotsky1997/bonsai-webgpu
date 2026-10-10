@@ -1,7 +1,7 @@
-import {NgramDraft} from './ngram.mjs?v=0.4.1';
-import init, {Engine} from './pkg/bonsai_webgpu.js?v=0.4.1';
-import {renderPrompt,toolsFor,ToolCallParser} from './chat-template.mjs?v=0.4.1';
-export {renderPrompt} from './chat-template.mjs?v=0.4.1';
+import {NgramDraft} from './ngram.mjs?v=0.4.1.1';
+import init, {Engine} from './pkg/bonsai_webgpu.js?v=0.4.1.1';
+import {renderPrompt,toolsFor,ToolCallParser} from './chat-template.mjs?v=0.4.1.1';
+export {renderPrompt} from './chat-template.mjs?v=0.4.1.1';
 const manifestSha='13bbc348fe1832a85471abb8cc7794fa99cd6e94492f5018f1002b6ae9eb63a6';
 let cacheName,forceNetwork=false,prefetchDepth;
 let cachedAttention;
@@ -27,7 +27,7 @@ async function asset(path,expected) {
 async function load(context=2048,batch=8,fast=true,kvBits=4) {
  const started=performance.now();emit({type:'loading',message:'正在初始化 WebGPU…',percent:0});
  if(!navigator.gpu)throw Error('当前浏览器没有 WebGPU；请使用支持 WebGPU 的新版 Chrome、Edge 或 Safari。');
- const wasmPromise=init({module_or_path:new URL('./pkg/bonsai_webgpu_bg.wasm?v=0.4.1',import.meta.url)});
+ const wasmPromise=init({module_or_path:new URL('./pkg/bonsai_webgpu_bg.wasm?v=0.4.1.1',import.meta.url)});
  const manifest=JSON.parse(new TextDecoder().decode(await asset('manifest.json',manifestSha)));
  const tk=manifest.tokenizer??{name:'tokenizer.json'};
  const tokenizerPromise=asset(tk.name,tk.sha256);

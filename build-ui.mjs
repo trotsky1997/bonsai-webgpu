@@ -6,5 +6,5 @@ const assets=new Map();for(const f of await readdir('ui'))if(/\.(png|svg|ico)$/.
 const built=spawnSync('npm',['exec','vite','build'],{cwd:'ui-source',env:{...process.env,LLAMA_UI_OUT_DIR:'../ui'},stdio:'inherit'});if(built.status!==0)process.exit(built.status??1);
 for(const [f,bytes]of assets)await writeFile('ui/'+f,bytes);
 // The runtime owns the sole service worker, including the hashed Svelte assets.
-const files=(await readdir('ui/_app/immutable',{recursive:true,withFileTypes:true})).filter(e=>e.isFile()).map(e=>(e.parentPath+'/'+e.name).replace(/^ui\//,''));
+const files=(await readdir('ui/_app/immutable',{recursive:true,withFileTypes:true})).filter(e=>e.isFile()).map(e=>(e.parentPath+'/'+e.name).replace(/^ui\//,'')).sort();
 await writeFile('ui/sw.js',(await readFile('web/sw.js','utf8')).replace('/* UI_ASSETS */',files.map(f=>JSON.stringify(f)).join(',')));

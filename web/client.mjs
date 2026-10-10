@@ -1,7 +1,7 @@
 // OpenAI-shaped streaming transport, entirely within this browser tab.
 const nativeFetch=window.fetch.bind(window);
 const appBase=new URL('../',import.meta.url);
-const worker=new Worker(new URL('web/worker.mjs?v=0.4.1',appBase),{type:'module'});
+const worker=new Worker(new URL('web/worker.mjs?v=0.4.1.1',appBase),{type:'module'});
 let resolveReady,rejectReady,info,serial=0;
 const ready=new Promise((resolve,reject)=>{resolveReady=resolve;rejectReady=reject;});
 const listeners=new Map();
